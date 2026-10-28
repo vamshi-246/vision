@@ -1,0 +1,13 @@
+Command: make smoke
+Date: 2026-10-28
+
+PASS Python scientific stack
+Icarus Verilog version 12.0 (devel) (s20150603-1539-g2693dd32b)
+NOT RUN (missing) vivado
+NOT RUN (missing) verilator
+NOT RUN (missing) yosys
+NOT RUN (missing) sby
+NOT RUN (missing) nuXmv
+NOT RUN (missing) NuSMV
+NOT RUN (missing) espresso
+NOT RUN (missing) riscv32-unknown-elf-gcc

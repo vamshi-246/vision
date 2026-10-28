@@ -1,0 +1,22 @@
+id,requirement_or_question,design_block,test_or_proof,evidence,status
+D1,Bit-exact golden model,model/golden.py,pytest unit and determinism tests,model/tests,IN_PROGRESS
+D2,Hand HLS Sobel II=1,hls/dfg.py and hls/schedule.py,random-window equivalence,hls/report,OPEN
+D3,Line buffer frame sync VGA,rtl/linebuf.sv rtl/ctrl_sync.sv rtl/vga_timing.sv,unit timing assertions,tb/unit,OPEN
+D4,Espresso and BDD direction/NMS,study/espresso and study/bdd,truth-table equivalence,study/results,OPEN
+D5,APB histogram and control,rtl/apb_regs.sv rtl/classify_hist.sv,APB and forwarding tests,tb/unit,OPEN
+D6,Guo and Wu paper reproduction,model/variants.py and study/paper_guo_wu.py,quality/resource comparison,doc/literature.md,OPEN
+D7,Pixel exact on image regression,rtl/top.sv and tb/system,per-pixel mismatch and CRC,tb/reports,OPEN
+D8,Measured resources timing latency,fpga/build.tcl,post-implementation reports,fpga/reports,NOT_RUN_TOOL_MISSING
+D9,Quality/resource Pareto,study scripts,generated plot tables,study/results,OPEN
+D10,CTL SVA mutation proof,formal/nusmv and formal/sby,model checker and mutants,formal/results,NOT_RUN_TOOL_MISSING
+D11,Bitstream ILA VGA demo,fpga/build.tcl and fpga/ila.tcl,bring-up B0-B7 evidence,fpga/reports,NOT_RUN_HARDWARE
+D12,Final report slides viva,doc/report and doc/slides,release checklist,doc/report,OPEN
+RQ1,O(width) memory versus frame cache,line buffers and memory analysis,resource and analytical table,study/results,OPEN
+RQ2,Previous-frame adaptive thresholds,classify_hist and threshold FSM,sequence experiments,study/results,OPEN
+RQ3,K-stage hysteresis quality,hyst_stage and model variants,F(K) and geodesic tests,study/results,OPEN
+RQ4,Approximate arithmetic on FPGA,model variants and RTL variants,PSNR F-score and implementation data,study/results,OPEN
+RQ5,Direction constant and minimisation,dirnms and study scripts,angle F-score BDD LUT study,study/results,OPEN
+RQ6,Hand scheduling benefit,Sobel schedule and RTL,operation/depth/II comparison,hls/report,OPEN
+RQ7,Control correctness,ctrl_sync and formal models,CTL SVA mutation tests,formal/results,OPEN
+RQ8,Hardware real-time correctness,top and ILA,CRC sticky flags and timing,fpga/reports,NOT_RUN_HARDWARE
+
