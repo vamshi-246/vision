@@ -1,6 +1,6 @@
 PYTHON ?= python
 
-.PHONY: smoke golden sim formal synth impl bit report clean
+.PHONY: smoke golden vectors sim formal synth impl bit report clean
 
 smoke:
 	$(PYTHON) -c "import numpy, PIL, matplotlib, cv2, pytest, scipy; print('PASS Python scientific stack')"
@@ -9,6 +9,9 @@ smoke:
 
 golden:
 	$(PYTHON) -m pytest model/tests -q
+
+vectors:
+	$(PYTHON) -m model.gen_vectors --outdir tb/vectors/generated
 
 sim:
 	iverilog -g2012 -Wall -s tb_vga_timing -o build/tb_vga_timing rtl/vga_timing.sv tb/unit/tb_vga_timing.sv

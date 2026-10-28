@@ -18,3 +18,4 @@ out/
 fpga/reports/*.bit
 fpga/reports/*.ltx
 
+tb/vectors/generated/

@@ -1,5 +1,25 @@
 # Work log
 
+## 006 - 2026-10-28 - deterministic RTL-vector exporter
+
+**Files added.** `model/gen_vectors.py` now writes input and all golden
+per-stage raster-order hex files plus a sorted JSON manifest containing the
+fixed-point configuration, valid margin, CRC32, and edge-hex SHA-256. It calls
+only `model.golden` arithmetic. `model/tests/test_vectors.py` verifies the
+manifest, stage-file presence, and CRC agreement on a deterministic step
+image. `make vectors` generates the full corpus into the ignored
+`tb/vectors/generated/` directory.
+
+**Verification.** `make golden` passed with 8 tests. A disposable 16x12,
+one-image synthetic smoke export to `build/vector_smoke` completed and wrote a
+manifest plus all stages. This is an exporter proof only; the generated files
+have not yet been used by a full-frame RTL scoreboard.
+
+**Next.** Add a system testbench that streams a generated input hex file and
+compares each valid final-stage output and final CRC to the corresponding
+manifest. Larger corpus generation remains an explicit command so repository
+history is not filled with generated hex data.
+
 ## 005 - 2026-10-28 - control blocks and baseline streaming-core integration
 
 **Scope.** Added the remaining P4 baseline primitives that can be verified
