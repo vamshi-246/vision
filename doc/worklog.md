@@ -1,5 +1,24 @@
 # Work log
 
+## 004 - 2026-10-28 - literature ledger seeded from the binding plan
+
+**Work performed.** Transcribed the plan's Section 4.1 (L1-L13) and Section
+4.2 (G1-G5) into `doc/literature.md`, then added an evidence legend, source
+status, full-paper entries for L1 and L3, a queued-read table, and a
+literature-to-project matrix. The ledger distinguishes plan/source claims from
+locally verified results; no paper performance number is recorded as a project
+measurement.
+
+**Correction.** L3 is now cited as IEEE SysCon 2025 (DOI
+10.1109/SYSCON64521.2025.11014645), rather than the provisional journal-like
+citation in the plan. The P1 search also found prior work using a
+previous-frame histogram in blanking, so N1 is narrowed to a quantified
+bit-exact FPGA trade-off rather than a claim to the generic prior-frame idea.
+
+**Next.** Read L2, L5, L7-L11 from primary sources in priority order and add a
+full-paper evidence entry after each; do not use their plan-table figures as
+verified data before then.
+
 ## 003 - 2026-10-28 - executable reference and RTL arithmetic baseline
 
 **Scope.** Per the requested code-first order, research, reports, temporal
