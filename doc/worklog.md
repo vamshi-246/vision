@@ -1,5 +1,35 @@
 # Work log
 
+## 008 - 2026-10-28 - full-frame RTL regression on supplied Demon-Slayer image
+
+**Artefacts produced.** `model/rtl_image_test.py` prepares a target-resolution
+input hex and a byte-encoded golden expected edge hex. The full-frame
+`tb/system/tb_image_scoreboard.sv` streams all 307,200 input pixels through
+`edge_pipeline` and writes its own RTL output hex. The Python report phase then
+compares the independently produced files and writes one Markdown report.
+`scripts/run_randomtest.ps1` performs the three stages in one command. All
+generated evidence is isolated in the ignored `randomtests/` directory.
+
+**Run.** The supplied 288x288 `Demon-Slayer-Anime-3.jpg` was RGB-to-gray
+converted and resized to 640x480. Configuration: 3x3 Gaussian, low/high
+thresholds 80/200, 13/32 direction constant, K=0, and three-pixel forced-zero
+margin. Output files are `demon_slayer_input.hex`,
+`demon_slayer_expected_output.hex`, `demon_slayer_rtl_output.hex`, and
+`demon_slayer_rtl_comparison.md`.
+
+**Measured result.** PASS, bit exact: 0 mismatches over 307,200 pixels;
+70,782 NMS survivors; 4,106 weak class pixels; 4,804 final strong edges in
+both golden and RTL output; CRC32 `39abe3c7` in both. The RTL simulation
+reported `hist_nnz=70782` and `hist_valid=1`, independently agreeing with the
+golden survivor count. Icarus informational messages concerning `unique case`
+and `always_comb` constant-select sensitivity remain; no synthesis/formal/
+hardware claim follows from this simulation.
+
+**Use.** `powershell -ExecutionPolicy Bypass -File scripts/run_randomtest.ps1
+-Image IMAGE_PATH -Name RUN_NAME -OutDir randomtests`. The current testbench
+is fixed at the 640x480 project target; do not use its output for another
+resolution without parameterising both driver and RTL core.
+
 ## 007 - 2026-10-28 - single-image visual reference-model runner
 
 **Files added.** `model/run_image.py` accepts one ordinary image readable by

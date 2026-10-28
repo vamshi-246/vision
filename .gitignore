@@ -20,3 +20,4 @@ fpga/reports/*.ltx
 
 tb/vectors/generated/
 results/
+randomtests/
