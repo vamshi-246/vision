@@ -1,5 +1,34 @@
 # Work log
 
+## 005 - 2026-10-28 - control blocks and baseline streaming-core integration
+
+**Scope.** Added the remaining P4 baseline primitives that can be verified
+with the installed tools: source timing checking (`ctrl_sync`), threshold
+classification plus a coherent ping-pong 64-bin frame histogram
+(`classify_hist`), one conditional-dilation hysteresis stage (`hyst_stage`),
+CRC-32/IEEE (`crc32`), and the CPU-independent zero-wait-state APB register
+bank (`apb_regs`). `rtl/top.sv` now provides `edge_pipeline`, a board-neutral
+streaming connection of the three line-buffered 3x3 stages, Gaussian, Sobel,
+NMS, classification, and histogram snapshot.
+
+**Verification.** `make sim; make golden` passed. The RTL unit suite now
+passes timing, Gaussian, line buffer, classifier/histogram, hysteresis stage,
+CRC32, APB registers, sync checker, integrated pipeline, Sobel, and NMS; the
+Python golden suite reports 7 passed. The integration test drives an 8x8
+vertical step. `model.golden.edge_frame` predicts exactly two strong pixels at
+(4,3) and (4,4); the RTL produces those classes and a two-survivor histogram.
+
+**Known boundary.** `edge_pipeline` is a reusable processing core, not a
+board top: it does not yet provide VGA phase-offset display, ROM/FIFO source,
+APB bridge wiring, runtime K-stage cascade, temporal threshold FSM, or a
+full-frame zero-filled output stream for CRC/display. Synthesis, formal, and
+hardware results remain NOT RUN because Vivado/formal tools/the board are not
+available.
+
+**Tool notes.** Icarus emits informational limitations for `unique case` and
+constant selects in `always_comb`; all compiled simulations completed with
+PASS. These messages are not a synthesis or formal sign-off.
+
 ## 004 - 2026-10-28 - literature ledger seeded from the binding plan
 
 **Work performed.** Transcribed the plan's Section 4.1 (L1-L13) and Section

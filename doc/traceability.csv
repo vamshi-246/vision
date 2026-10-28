@@ -1,11 +1,11 @@
 id,requirement_or_question,design_block,test_or_proof,evidence,status
 D1,Bit-exact golden model,model/golden.py,pytest unit and determinism tests,model/tests,IN_PROGRESS
 D2,Hand HLS Sobel II=1,hls/dfg.py and hls/schedule.py,random-window equivalence,hls/report,OPEN
-D3,Line buffer frame sync VGA,rtl/linebuf.sv rtl/ctrl_sync.sv rtl/vga_timing.sv,unit timing assertions,tb/unit,OPEN
+D3,Line buffer frame sync VGA,rtl/linebuf.sv rtl/ctrl_sync.sv rtl/vga_timing.sv,unit timing assertions,tb/unit,IN_PROGRESS
 D4,Espresso and BDD direction/NMS,study/espresso and study/bdd,truth-table equivalence,study/results,OPEN
-D5,APB histogram and control,rtl/apb_regs.sv rtl/classify_hist.sv,APB and forwarding tests,tb/unit,OPEN
+D5,APB histogram and control,rtl/apb_regs.sv rtl/classify_hist.sv,APB and histogram snapshot tests,tb/unit,IN_PROGRESS
 D6,Guo and Wu paper reproduction,model/variants.py and study/paper_guo_wu.py,quality/resource comparison,doc/literature.md,OPEN
-D7,Pixel exact on image regression,rtl/top.sv and tb/system,per-pixel mismatch and CRC,tb/reports,OPEN
+D7,Pixel exact on image regression,rtl/top.sv and tb/system,per-pixel mismatch and CRC,tb/reports,IN_PROGRESS
 D8,Measured resources timing latency,fpga/build.tcl,post-implementation reports,fpga/reports,NOT_RUN_TOOL_MISSING
 D9,Quality/resource Pareto,study scripts,generated plot tables,study/results,OPEN
 D10,CTL SVA mutation proof,formal/nusmv and formal/sby,model checker and mutants,formal/results,NOT_RUN_TOOL_MISSING

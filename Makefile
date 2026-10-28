@@ -17,6 +17,18 @@ sim:
 	vvp build/tb_gauss
 	iverilog -g2012 -Wall -s tb_linebuf -o build/tb_linebuf rtl/linebuf.sv tb/unit/tb_linebuf.sv
 	vvp build/tb_linebuf
+	iverilog -g2012 -Wall -s tb_classify_hist -o build/tb_classify_hist rtl/classify_hist.sv tb/unit/tb_classify_hist.sv
+	vvp build/tb_classify_hist
+	iverilog -g2012 -Wall -s tb_hyst_stage -o build/tb_hyst_stage rtl/linebuf.sv rtl/hyst_stage.sv tb/unit/tb_hyst_stage.sv
+	vvp build/tb_hyst_stage
+	iverilog -g2012 -Wall -s tb_crc32 -o build/tb_crc32 rtl/crc32.sv tb/unit/tb_crc32.sv
+	vvp build/tb_crc32
+	iverilog -g2012 -Wall -s tb_apb_regs -o build/tb_apb_regs rtl/apb_regs.sv tb/unit/tb_apb_regs.sv
+	vvp build/tb_apb_regs
+	iverilog -g2012 -Wall -s tb_ctrl_sync -o build/tb_ctrl_sync rtl/ctrl_sync.sv tb/unit/tb_ctrl_sync.sv
+	vvp build/tb_ctrl_sync
+	iverilog -g2012 -Wall -s tb_edge_pipeline -o build/tb_edge_pipeline rtl/linebuf.sv rtl/gauss.sv rtl/sobel.sv rtl/dirnms.sv rtl/classify_hist.sv rtl/top.sv tb/unit/tb_edge_pipeline.sv
+	vvp build/tb_edge_pipeline
 	iverilog -g2012 -Wall -s tb_sobel -o build/tb_sobel rtl/sobel.sv tb/unit/tb_sobel.sv
 	vvp build/tb_sobel
 	iverilog -g2012 -Wall -s tb_dirnms -o build/tb_dirnms rtl/dirnms.sv tb/unit/tb_dirnms.sv
