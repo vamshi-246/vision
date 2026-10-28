@@ -1,5 +1,35 @@
 # Work log
 
+## 003 - 2026-10-28 - executable reference and RTL arithmetic baseline
+
+**Scope.** Per the requested code-first order, research, reports, temporal
+thresholding, control-plane work, and FPGA integration are deferred. This
+increment creates only the independently executable image contract and the
+first streaming primitives needed to consume it.
+
+**Files added/updated.** `model/golden.py`, `model/fixedpoint.py`, and their
+seven pytest checks implement the frozen Appendix-A integer operations:
+zero-padded Gaussian, Sobel L1 magnitude, 13/32 direction comparisons,
+asymmetric NMS, threshold classification, and optional iterative hysteresis.
+`rtl/pkg.sv`, `rtl/vga_timing.sv`, `rtl/linebuf.sv`, `rtl/gauss.sv`,
+`rtl/sobel.sv`, and `rtl/dirnms.sv` provide the corresponding shared constants,
+video timing, O(width) two-line window storage, Gaussian, Sobel/direction, and
+NMS selection primitives. Five focused testbenches are added under `tb/unit/`.
+The Makefile `sim` target now runs them rather than reporting a placeholder.
+
+**Verification run.** `make sim; make golden` completed with all checks
+passing: `tb_vga_timing`, `tb_gauss`, `tb_linebuf`, `tb_sobel`, `tb_dirnms`,
+and `7 passed` from `model/tests`. During development the tests caught and
+corrected a Gaussian data/valid pipeline skew, a timing-test port-map issue,
+and a centre-kernel rounding-vector error. Icarus notes that it ignores the
+simulation-only `unique case` quality in `dirnms`; this is not a functional
+failure. Vivado synthesis, formal proof, and board execution remain NOT RUN
+because the required tools/hardware are unavailable.
+
+**Next.** Connect the primitives under a frame/border-aware pipeline and
+compare full-frame RTL output against generated golden vectors before adding
+thresholding, memory control, or board-specific integration.
+
 This log records commands actually run, measured results, changed files, and
 the next action. `NOT RUN` means a required tool or hardware item was absent;
 it never represents a substitute result.
