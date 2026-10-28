@@ -13,6 +13,9 @@ golden:
 vectors:
 	$(PYTHON) -m model.gen_vectors --outdir tb/vectors/generated
 
+image:
+	@echo "Usage: python -m model.run_image INPUT_IMAGE --outdir results/NAME"
+
 sim:
 	iverilog -g2012 -Wall -s tb_vga_timing -o build/tb_vga_timing rtl/vga_timing.sv tb/unit/tb_vga_timing.sv
 	vvp build/tb_vga_timing

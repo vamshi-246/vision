@@ -1,5 +1,22 @@
 # Work log
 
+## 007 - 2026-10-28 - single-image visual reference-model runner
+
+**Files added.** `model/run_image.py` accepts one ordinary image readable by
+OpenCV (PNG/JPG/BMP and similar), converts colour inputs to the golden model's
+defined RGB-to-gray representation, resizes to 640x480 by default, and writes
+an evaluation bundle. The bundle is a labelled six-panel PNG, individual
+input/Gaussian/magnitude/NMS/class/edge PNGs, and `results.json` containing
+config, counts, margin, and CRC32. `--no-resize` keeps a source resolution.
+
+**Verification.** `make golden` passed with 9 tests. The runner was then
+executed on the Lena test image at 640x480 into `results/lena/`: 88,499 NMS
+survivors, 12,058 weak class pixels, 6,538 final strong edges, CRC32
+`4db22fc4`. Generated outputs are ignored by Git so an evaluator can create
+new evidence without polluting source history.
+
+**Use.** `python -m model.run_image PATH_TO_IMAGE --outdir results/NAME`.
+
 ## 006 - 2026-10-28 - deterministic RTL-vector exporter
 
 **Files added.** `model/gen_vectors.py` now writes input and all golden
