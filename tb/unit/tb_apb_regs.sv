@@ -52,6 +52,17 @@ module tb_apb_regs;
     read_reg(8'h0c, 32'h00000013, 0);
     write_reg(8'h0c, 32'h00000003, 0); read_reg(8'h0c, 32'h00000010, 0);
     write_reg(8'h3c, 0, 1);
+    // Exhaustive address decode, including all misaligned addresses.
+    for(integer a=0;a<256;a++) begin
+      @(negedge pclk); psel=1; penable=1; pwrite=0; paddr=8'(a); #1;
+      if(pslverr !== !((a%4==0) && a<=8'h34)) $fatal(1,"read decode %02x",a);
+    end
+    @(negedge pclk); psel=0;penable=0;
+    // W1C must not lose a newly arriving event in the same access cycle.
+    @(negedge pclk); psel=1;penable=0;pwrite=1;paddr=8'h0c;pwdata=32'h3f;
+    @(negedge pclk); penable=1; fifo_overflow_i=1;
+    @(negedge pclk); psel=0;penable=0;pwrite=0;fifo_overflow_i=0;
+    read_reg(8'h0c,32'h4,0);
     $display("PASS tb_apb_regs");
     $finish;
   end

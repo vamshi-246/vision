@@ -1,0 +1,28 @@
+
+15. Printing statistics.
+
+=== paper_system ===
+
+   Number of wires:               7246
+   Number of wire bits:          41256
+   Number of public wires:         625
+   Number of public wire bits:   12316
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:              18604
+     BUFG                            1
+     CARRY4                        254
+     DSP48E1                        13
+     FDRE                         9309
+     FDSE                            8
+     INV                           145
+     LUT2                          799
+     LUT3                          515
+     LUT4                         1694
+     LUT5                          754
+     LUT6                         4978
+     RAMB18E1                        6
+     RAMB36E1                       75
+     SRL16E                         53
+

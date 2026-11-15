@@ -1,0 +1,6 @@
+max slack_ns=20.567
+min slack_ns=0.014
+latches=0
+bram_primitives=6
+dsp_primitives=0
+clock_period_ns=39.722

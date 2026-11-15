@@ -1,0 +1,6 @@
+PASS mutation detected: gaussian_rounding: FATAL: tb/system/tb_core_regression.sv:52: Gaussian f=0 (3,1) got=49 exp=50
+PASS mutation detected: sobel_magnitude: FATAL: tb/system/tb_core_regression.sv:59: Sobel f=0 (2,2) mag=25/38 dir=3/3
+PASS mutation detected: nms_tie: FATAL: tb/system/tb_core_regression.sv:65: NMS f=1 (8,3) got=202 exp=0
+PASS mutation detected: coordinate_alignment: FATAL: tb/system/tb_core_regression.sv:72: Output f=0 got=(2,3) class=0 expected=(3,3) class=0
+PASS mutation detected: hist_final_pixel: FATAL: tb/system/tb_core_regression.sv:76: hist nnz f=1 got=2 exp=3
+PASS mutation detected: row_order: FATAL: tb/system/tb_core_regression.sv:52: Gaussian f=0 (1,1) got=50 exp=47

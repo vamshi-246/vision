@@ -173,7 +173,7 @@ def nms_frame(mag: np.ndarray, direction: np.ndarray, input_margin: int) -> np.n
 
 def classify_frame(nms: np.ndarray, cfg: Config) -> np.ndarray:
     n = np.asarray(nms, dtype=np.uint16)
-    return np.where(n >= cfg.thr_hi, 2, np.where((n > 0) & (n >= cfg.thr_lo), 1, 0)).astype(np.uint8)
+    return np.where((n > 0) & (n >= cfg.thr_hi), 2, np.where((n > 0) & (n >= cfg.thr_lo), 1, 0)).astype(np.uint8)
 
 
 def dilate3x3(binary: np.ndarray) -> np.ndarray:

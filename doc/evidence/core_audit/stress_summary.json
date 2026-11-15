@@ -1,0 +1,47 @@
+[
+  {
+    "test": "tb_arithmetic_stress",
+    "seconds": 2.171,
+    "output": "PASS arithmetic: 512 binary extrema + 100000 random windows, Sobel accepted=94262\ntb/unit/tb_arithmetic_stress.sv:51: $finish called at 1005156000 (1ps)\n"
+  },
+  {
+    "test": "tb_direction_exhaustive",
+    "seconds": 26.956,
+    "output": "PASS direction exhaustive: 4169764 magnitude/sign combinations, axes, zero and exact 13/32 ties\ntb/unit/tb_direction_exhaustive.sv:26: $finish called at 41697646000 (1ps)\n"
+  },
+  {
+    "test": "tb_nms_stress",
+    "seconds": 0.817,
+    "output": "PASS NMS: 73728 tie/boundary combinations + 100000 random neighbourhoods\ntb/unit/tb_nms_stress.sv:39: $finish called at 173728000 (1ps)\n"
+  },
+  {
+    "test": "tb_hist_stress",
+    "seconds": 0.115,
+    "output": "PASS classifier/histogram: 16384 values, bubbles, 8 snapshots, saturation, clear during valid\ntb/unit/tb_hist_stress.sv:40: $finish called at 163966640 (1ps)\n"
+  },
+  {
+    "test": "tb_linebuf_recovery",
+    "seconds": 0.065,
+    "output": "PASS linebuf: 76 SOF abort/restarts, odd frame height, random data, valid gaps\ntb/unit/tb_linebuf_recovery.sv:47: $finish called at 96170000 (1ps)\n"
+  },
+  {
+    "test": "tb_core_reset",
+    "seconds": 0.265,
+    "output": "PASS core reset: 40 abort positions, one-cycle reset, immediate restart\ntb/system/tb_core_reset.sv:41: $finish called at 154660000 (1ps)\n"
+  },
+  {
+    "test": "tb_apb_regs",
+    "seconds": 0.008,
+    "output": "PASS tb_apb_regs\ntb/unit/tb_apb_regs.sv:67: $finish called at 3010000 (1ps)\n"
+  },
+  {
+    "test": "tb_ctrl_sync",
+    "seconds": 0.008,
+    "output": "PASS tb_ctrl_sync\ntb/unit/tb_ctrl_sync.sv:33: $finish called at 176000 (1ps)\n"
+  },
+  {
+    "test": "tb_crc_stress",
+    "seconds": 4.43,
+    "output": "PASS CRC: 110 frames, 327395 bytes, zlib oracle, bubbles and adjacent frame boundaries\ntb/unit/tb_crc_stress.sv:34: $finish called at 3525836000 (1ps)\n"
+  }
+]

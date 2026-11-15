@@ -1,0 +1,15 @@
+digraph P { rankdir=LR; node [shape=box,style="rounded,filled",fillcolor="#eef3fb",fontname="Helvetica"]; edge [fontname="Helvetica",fontsize=10];
+ pix [label="pix_data[7:0]\n+ sof",fillcolor="#fff3d6"];
+ sync [label="ctrl_sync\n(FSM IDLE/RUN)\nx,y tags, in_act"];
+ inreg [label="input reg\n(blanking -> 0)\n1 clk"];
+ gauss [label="gauss 3x3\nshift-add /16\n4 clk"];
+ sobel [label="sobel (hand-HLS)\nCSE, height 3, II=1\n7 clk"];
+ dnms [label="dirnms\ndir_quant (Espresso SOP)\n+ NMS, 6 clk"];
+ cls [label="classify\nthr_hi / thr_lo\n1 clk"];
+ apb [label="apb_regs\nCTRL THR_HI THR_LO\nSTATUS counters",fillcolor="#e6f5e6"];
+ dly [label="delay_ram x2\n(gray: K, blur: K-806)\nviews aligned",fillcolor="#f2e6f5"];
+ out [label="o_gray o_blur o_cls\no_x o_y",fillcolor="#fff3d6"];
+ pix->sync; pix->inreg; sync->inreg [label="tags"]; inreg->gauss->sobel->dnms->cls->out;
+ gauss->dly [label="blur"]; pix->dly [label="gray"]; dly->out;
+ apb->cls [label="thr_act"]; cls->apb [label="cls stream\n(counters, hist)"]; sync->apb [label="frame_end\nlocked,sync_err"]; apb->sync [label="run_en"];
+}

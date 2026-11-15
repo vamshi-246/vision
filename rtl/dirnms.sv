@@ -3,16 +3,16 @@
 // The NMS selection part of D4. Direction is already quantised by sobel.sv;
 // this module has no state and is the reference before Espresso minimisation.
 module dirnms (
-  input  logic [10:0] magnitude,
-  input  logic [1:0]  direction,
-  input  logic [10:0] mag_nw,
-  input  logic [10:0] mag_n,
-  input  logic [10:0] mag_ne,
-  input  logic [10:0] mag_w,
-  input  logic [10:0] mag_e,
-  input  logic [10:0] mag_sw,
-  input  logic [10:0] mag_s,
-  input  logic [10:0] mag_se,
+  input  wire  [10:0] magnitude,
+  input  wire  [1:0]  direction,
+  input  wire  [10:0] mag_nw,
+  input  wire  [10:0] mag_n,
+  input  wire  [10:0] mag_ne,
+  input  wire  [10:0] mag_w,
+  input  wire  [10:0] mag_e,
+  input  wire  [10:0] mag_sw,
+  input  wire  [10:0] mag_s,
+  input  wire  [10:0] mag_se,
   output logic [10:0] nms_mag,
   output logic        keep
 );

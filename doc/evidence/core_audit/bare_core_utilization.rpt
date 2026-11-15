@@ -1,0 +1,37 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.2 (lin64) Build 5239630 Fri Nov 08 22:34:34 MST 2024
+| Date         : Fri Nov 13 19:03:33 2026
+| Host         : VAMSHI running 64-bit Ubuntu 24.04.5 LTS
+| Command      : report_utilization -hierarchical -file {/home/vamshi/IIT Mandi Academic Folder/IITM 7th Sem/RTL Design and Verification/project/build/vivado_core/utilization_route.rpt}
+| Design       : edge_pipeline
+| Device       : xc7z010clg400-1
+| Speed File   : -1
+| Design State : Routed
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++-------------------+-------------------------+------------+------------+---------+------+------+--------+--------+------------+
+|      Instance     |          Module         | Total LUTs | Logic LUTs | LUTRAMs | SRLs |  FFs | RAMB36 | RAMB18 | DSP Blocks |
++-------------------+-------------------------+------------+------------+---------+------+------+--------+--------+------------+
+| edge_pipeline     |                   (top) |       3396 |       3393 |       0 |    3 | 4307 |      0 |      6 |          0 |
+|   (edge_pipeline) |                   (top) |          3 |          1 |       0 |    2 |   30 |      0 |      0 |          0 |
+|   u_classify_hist |           classify_hist |       2737 |       2737 |       0 |    0 | 3710 |      0 |      0 |          0 |
+|   u_gauss         |                   gauss |         53 |         53 |       0 |    0 |    9 |      0 |      0 |          0 |
+|   u_gauss_lb      |                 linebuf |         61 |         61 |       0 |    0 |  139 |      0 |      2 |          0 |
+|   u_nms           |                  dirnms |          0 |          0 |       0 |    0 |    0 |      0 |      0 |          0 |
+|   u_nms_lb        | linebuf__parameterized1 |        333 |        333 |       0 |    0 |  173 |      0 |      2 |          0 |
+|   u_sobel         |                   sobel |        105 |        104 |       0 |    1 |  107 |      0 |      0 |          0 |
+|   u_sobel_lb      | linebuf__parameterized0 |        106 |        106 |       0 |    0 |  139 |      0 |      2 |          0 |
++-------------------+-------------------------+------------+------------+---------+------+------+--------+--------+------------+
+* Note: The sum of lower-level cells may be larger than their parent cells total, due to cross-hierarchy LUT combining
+
+

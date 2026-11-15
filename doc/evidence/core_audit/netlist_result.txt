@@ -1,0 +1,2 @@
+PASS synthesized netlist: 2 consecutive VGA frames, 601032 classes, markers and histograms
+Simulation wall seconds: 573.763

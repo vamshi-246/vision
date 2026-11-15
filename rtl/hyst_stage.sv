@@ -10,12 +10,12 @@ module hyst_stage #(
   parameter int unsigned X_W = $clog2(IMG_W),
   parameter int unsigned Y_W = $clog2(IMG_H)
 ) (
-  input  logic            clk,
-  input  logic            rst,
-  input  logic            in_valid,
-  input  logic            in_sof,
-  input  logic            in_eol,
-  input  logic [1:0]      in_cls,
+  input  wire             clk,
+  input  wire             rst,
+  input  wire             in_valid,
+  input  wire             in_sof,
+  input  wire             in_eol,
+  input  wire  [1:0]      in_cls,
   output logic            out_valid,
   output logic            out_sof,
   output logic            out_eol,

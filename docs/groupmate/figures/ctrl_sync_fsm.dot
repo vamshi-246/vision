@@ -1,0 +1,7 @@
+digraph F { rankdir=LR; node [shape=circle,fontname="Helvetica",style=filled,fillcolor="#eef3fb"]; edge [fontname="Helvetica",fontsize=10];
+ IDLE [label="IDLE\nx=y=0"]; RUN [label="RUN\n(locked)"];
+ IDLE -> IDLE [label="!(sof & run_en)"];
+ IDLE -> RUN [label="sof & run_en\n(x<=1, y<=0)"];
+ RUN -> RUN [label="run_en:\nx,y count raster\nwrap at (WT-1,HT-1)\nsof off-origin -> resync + sync_err"];
+ RUN -> IDLE [label="!run_en\n(x,y <= 0)"];
+}

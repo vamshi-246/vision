@@ -43,7 +43,7 @@ def run_image(
         raise ValueError(f"cannot read image: {input_path}")
     # golden._u8_gray defines the RGB weighting, while OpenCV returns BGR.
     raw_rgb = cv2.cvtColor(raw_bgr, cv2.COLOR_BGR2RGB)
-    image = resize_gray(raw_rgb, *resize) if resize else cv2.cvtColor(raw_bgr, cv2.COLOR_BGR2GRAY)
+    image = resize_gray(raw_rgb, *resize) if resize else raw_rgb
     result = edge_frame(image, cfg)
     outdir.mkdir(parents=True, exist_ok=True)
 

@@ -10,16 +10,16 @@ module edge_pipeline #(
   parameter int unsigned X_W = $clog2(IMG_W),
   parameter int unsigned Y_W = $clog2(IMG_H)
 ) (
-  input  logic            clk,
-  input  logic            rst,
-  input  logic            in_valid,
-  input  logic            in_sof,
-  input  logic            in_eol,
-  input  logic [7:0]      in_gray,
-  input  logic [10:0]     thr_lo,
-  input  logic [10:0]     thr_hi,
-  input  logic            clear_hist,
-  input  logic [5:0]      hist_rd_addr,
+  input  wire             clk,
+  input  wire             rst,
+  input  wire             in_valid,
+  input  wire             in_sof,
+  input  wire             in_eol,
+  input  wire  [7:0]      in_gray,
+  input  wire  [10:0]     thr_lo,
+  input  wire  [10:0]     thr_hi,
+  input  wire             clear_hist,
+  input  wire  [5:0]      hist_rd_addr,
   output logic [18:0]     hist_rd_data,
   output logic [18:0]     hist_nnz,
   output logic            hist_valid,
@@ -28,12 +28,19 @@ module edge_pipeline #(
   output logic            out_eol,
   output logic [X_W-1:0]  out_x,
   output logic [Y_W-1:0]  out_y,
+  output wire             smooth_valid,
+  output wire [7:0]       smooth_gray,
   output logic [1:0]      out_cls
 );
   localparam int unsigned G_W = IMG_W - 2;
   localparam int unsigned G_H = IMG_H - 2;
   localparam int unsigned S_W = IMG_W - 4;
   localparam int unsigned S_H = IMG_H - 4;
+
+  initial begin
+    if (IMG_W < 7 || IMG_H < 7 || IMG_W*IMG_H > 524287)
+      $fatal(1, "edge_pipeline requires dimensions >= 7 and <= 524287 frame pixels");
+  end
 
   logic g_win_valid;
   logic [X_W-1:0] g_win_x;
@@ -50,8 +57,6 @@ module edge_pipeline #(
   logic sobel_valid;
   logic [10:0] sobel_mag;
   logic [1:0] sobel_dir;
-  logic [X_W-1:0] sm_x0,sm_x1,sm_x2,sm_x3;
-  logic [Y_W-1:0] sm_y0,sm_y1,sm_y2,sm_y3;
   logic sm_sof0,sm_sof1,sm_sof2,sm_sof3;
   logic sm_eol0,sm_eol1,sm_eol2,sm_eol3;
 
@@ -81,7 +86,7 @@ module edge_pipeline #(
       gauss_eol <= 1'b0;
     end else begin
       gauss_sof <= g_win_valid && (g_win_x == 1) && (g_win_y == 1);
-      gauss_eol <= g_win_valid && (g_win_x == IMG_W - 2);
+      gauss_eol <= g_win_valid && (g_win_x == X_W'(IMG_W - 2));
     end
   end
 
@@ -98,16 +103,12 @@ module edge_pipeline #(
   // Sobel has four registered stages from input window to output.
   always_ff @(posedge clk) begin
     if (rst) begin
-      sm_x0 <= '0; sm_x1 <= '0; sm_x2 <= '0; sm_x3 <= '0;
-      sm_y0 <= '0; sm_y1 <= '0; sm_y2 <= '0; sm_y3 <= '0;
       sm_sof0 <= 0; sm_sof1 <= 0; sm_sof2 <= 0; sm_sof3 <= 0;
       sm_eol0 <= 0; sm_eol1 <= 0; sm_eol2 <= 0; sm_eol3 <= 0;
     end else begin
-      sm_x0 <= s_win_x; sm_x1 <= sm_x0; sm_x2 <= sm_x1; sm_x3 <= sm_x2;
-      sm_y0 <= s_win_y; sm_y1 <= sm_y0; sm_y2 <= sm_y1; sm_y3 <= sm_y2;
       sm_sof0 <= s_win_valid && (s_win_x == 1) && (s_win_y == 1);
       sm_sof1 <= sm_sof0; sm_sof2 <= sm_sof1; sm_sof3 <= sm_sof2;
-      sm_eol0 <= s_win_valid && (s_win_x == G_W - 2);
+      sm_eol0 <= s_win_valid && (s_win_x == X_W'(G_W - 2));
       sm_eol1 <= sm_eol0; sm_eol2 <= sm_eol1; sm_eol3 <= sm_eol2;
     end
   end
@@ -122,7 +123,7 @@ module edge_pipeline #(
     .mag_nw(n00[10:0]), .mag_n(n01[10:0]), .mag_ne(n02[10:0]), .mag_w(n10[10:0]), .mag_e(n12[10:0]),
     .mag_sw(n20[10:0]), .mag_s(n21[10:0]), .mag_se(n22[10:0]), .nms_mag, .keep(nms_keep)
   );
-  assign nms_eof = n_win_valid && (n_win_x == S_W - 2) && (n_win_y == S_H - 2);
+  assign nms_eof = n_win_valid && (n_win_x == X_W'(S_W - 2)) && (n_win_y == Y_W'(S_H - 2));
 
   classify_hist u_classify_hist (
     .clk, .rst, .thr_lo, .thr_hi, .nms_valid(n_win_valid), .nms_mag, .frame_end(nms_eof), .clear(clear_hist),
@@ -138,9 +139,11 @@ module edge_pipeline #(
       out_x <= n_win_x + 2;
       out_y <= n_win_y + 2;
       out_sof <= n_win_valid && (n_win_x == 1) && (n_win_y == 1);
-      out_eol <= n_win_valid && (n_win_x == S_W - 2);
+      out_eol <= n_win_valid && (n_win_x == X_W'(S_W - 2));
     end
   end
+  assign smooth_valid = gauss_valid;
+  assign smooth_gray = smooth;
   assign out_valid = cls_valid;
   assign out_cls = cls;
 endmodule

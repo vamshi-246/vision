@@ -13,7 +13,7 @@ module tb_edge_pipeline;
   int outputs;
   always #5 clk = ~clk;
 
-  edge_pipeline #(.IMG_W(8), .IMG_H(8), .X_W(3), .Y_W(3)) dut (.*);
+  edge_pipeline #(.IMG_W(8), .IMG_H(8), .X_W(3), .Y_W(3)) dut (.smooth_valid(), .smooth_gray(), .*);
 
   initial begin : stimulus
     int x, y;
@@ -36,7 +36,8 @@ module tb_edge_pipeline;
     end
     // Sobel pipeline is shorter than the following line-buffer fill, but give
     // the final registered classifier a few clocks to publish its last result.
-    repeat (8) begin
+    @(negedge clk); in_valid=0; in_sof=0; in_eol=0;
+    repeat (16) begin
       @(posedge clk); #1;
       if (out_valid) begin
         if (out_cls != ((out_x == 4) ? 2'b10 : 2'b00)) $fatal(1, "golden mismatch in flush");

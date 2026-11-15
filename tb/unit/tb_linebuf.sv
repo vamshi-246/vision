@@ -47,6 +47,7 @@ module tb_linebuf;
       end
     end
     @(negedge clk); pix_valid = 0; pix_sof = 0; pix_eol = 0;
+    @(posedge clk); #1; check_window(); // Drain synchronous RAM read.
     if (windows_seen != 4) $fatal(1, "saw %0d windows, expected 4", windows_seen);
     $display("PASS tb_linebuf");
     $finish;

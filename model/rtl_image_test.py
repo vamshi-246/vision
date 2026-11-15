@@ -34,6 +34,8 @@ def _read_gray(path: Path) -> np.ndarray:
 def prepare(image_path: Path, outdir: Path, name: str, cfg: Config) -> dict[str, object]:
     """Write 640x480 grayscale input and byte-encoded golden edge expected map."""
     cfg.check()
+    if (cfg.gauss_n, cfg.dir_num, cfg.dir_den, cfg.hyst_k, cfg.mag_bits, cfg.input_trunc_bits) != (3, 13, 32, 0, 11, 0):
+        raise ValueError("RTL image test supports only the baseline: Gaussian 3, direction 13/32, K=0, 11-bit magnitude, no input truncation")
     outdir.mkdir(parents=True, exist_ok=True)
     gray = _read_gray(image_path)
     result = edge_frame(gray, cfg)
@@ -161,7 +163,9 @@ def main() -> None:
     if args.command == "prepare":
         print(json.dumps(prepare(args.image, args.outdir, args.name, Config(thr_lo=args.thr_lo, thr_hi=args.thr_hi)), indent=2))
     else:
-        print(json.dumps(report(args.outdir, args.name), indent=2))
+        result = report(args.outdir, args.name)
+        print(json.dumps(result, indent=2))
+        raise SystemExit(0 if result["match"] else 1)
 
 
 if __name__ == "__main__":

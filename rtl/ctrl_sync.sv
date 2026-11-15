@@ -8,11 +8,11 @@ module ctrl_sync #(
   parameter int unsigned X_W = $clog2(IMG_W),
   parameter int unsigned Y_W = $clog2(IMG_H)
 ) (
-  input  logic           clk,
-  input  logic           rst,
-  input  logic           in_valid,
-  input  logic           in_sof,
-  input  logic           in_eol,
+  input  wire            clk,
+  input  wire            rst,
+  input  wire            in_valid,
+  input  wire            in_sof,
+  input  wire            in_eol,
   output logic [X_W-1:0] x,
   output logic [Y_W-1:0] y,
   output logic           out_valid,
@@ -34,8 +34,8 @@ module ctrl_sync #(
       y <= '0;
       sync_error <= 1'b0;
     end else if (in_valid) begin
-      if ((in_sof && ((x != '0) || (y != '0))) ||
-          (in_eol != (x == IMG_W - 1))) begin
+      if ((in_sof != ((x == '0) && (y == '0))) ||
+          (in_eol != (x == X_W'(IMG_W - 1)))) begin
         sync_error <= 1'b1;
       end
       if (in_sof) begin
@@ -43,7 +43,7 @@ module ctrl_sync #(
         y <= in_eol ? {{(Y_W-1){1'b0}}, 1'b1} : '0;
       end else if (in_eol) begin
         x <= '0;
-        y <= (y == IMG_H - 1) ? '0 : y + 1'b1;
+        y <= (y == Y_W'(IMG_H - 1)) ? '0 : y + 1'b1;
       end else begin
         x <= x + 1'b1;
       end

@@ -1,6 +1,7 @@
-PYTHON ?= python
+PYTHON ?= $(if $(wildcard build/venv/bin/python),build/venv/bin/python,python3)
+VIVADO ?= vivado
 
-.PHONY: smoke golden vectors sim formal synth impl bit report clean
+.PHONY: smoke golden vectors sim stress regression netlist formal espresso soc video study verify synth impl bit report clean
 
 smoke:
 	$(PYTHON) -c "import numpy, PIL, matplotlib, cv2, pytest, scipy; print('PASS Python scientific stack')"
@@ -17,6 +18,7 @@ image:
 	@echo "Usage: python -m model.run_image INPUT_IMAGE --outdir results/NAME"
 
 sim:
+	mkdir -p build
 	iverilog -g2012 -Wall -s tb_vga_timing -o build/tb_vga_timing rtl/vga_timing.sv tb/unit/tb_vga_timing.sv
 	vvp build/tb_vga_timing
 	iverilog -g2012 -Wall -s tb_gauss -o build/tb_gauss rtl/gauss.sv tb/unit/tb_gauss.sv
@@ -33,26 +35,73 @@ sim:
 	vvp build/tb_apb_regs
 	iverilog -g2012 -Wall -s tb_ctrl_sync -o build/tb_ctrl_sync rtl/ctrl_sync.sv tb/unit/tb_ctrl_sync.sv
 	vvp build/tb_ctrl_sync
-	iverilog -g2012 -Wall -s tb_edge_pipeline -o build/tb_edge_pipeline rtl/linebuf.sv rtl/gauss.sv rtl/sobel.sv rtl/dirnms.sv rtl/classify_hist.sv rtl/top.sv tb/unit/tb_edge_pipeline.sv
+	iverilog -g2012 -Wall -s tb_edge_pipeline -o build/tb_edge_pipeline rtl/linebuf.sv rtl/gauss.sv rtl/dir_decide.sv rtl/sobel.sv rtl/dirnms.sv rtl/classify_hist.sv rtl/top.sv tb/unit/tb_edge_pipeline.sv
 	vvp build/tb_edge_pipeline
-	iverilog -g2012 -Wall -s tb_sobel -o build/tb_sobel rtl/sobel.sv tb/unit/tb_sobel.sv
+	iverilog -g2012 -Wall -s tb_sobel -o build/tb_sobel rtl/dir_decide.sv rtl/sobel.sv tb/unit/tb_sobel.sv
 	vvp build/tb_sobel
 	iverilog -g2012 -Wall -s tb_dirnms -o build/tb_dirnms rtl/dirnms.sv tb/unit/tb_dirnms.sv
 	vvp build/tb_dirnms
 
 formal:
-	@echo "NOT RUN: NuSMV/nuXmv and SymbiYosys are unavailable on this machine."
+	$(PYTHON) formal/run_ctl.py
+	$(PYTHON) formal/abstract/run_formal.py | sed -n '/SUMMARY/,$$p'
+
+espresso:
+	$(PYTHON) logic/espresso_direction.py
+
+soc:
+	$(PYTHON) scripts/soc_regression.py
+
+video:
+	$(PYTHON) scripts/video_regression.py
+
+study:
+	$(PYTHON) scripts/gen_study_rtl.py
+	$(PYTHON) scripts/baseline_check.py
+	$(PYTHON) scripts/paper_quality.py
+	$(PYTHON) scripts/otsu_check.py
+	$(PYTHON) scripts/compare_resources.py
+
+verify: sim stress regression video soc formal
+
+stress:
+	$(PYTHON) scripts/run_stress.py
+
+regression:
+	$(PYTHON) scripts/core_regression.py
+
+netlist:
+	$(PYTHON) scripts/netlist_regression.py --vivado-bin "$$(dirname "$$(command -v $(VIVADO))")"
 
 synth:
-	@echo "NOT RUN: Vivado is unavailable on this machine. fpga/build.tcl will be added in P7."
+	mkdir -p build
+	P7_SYNTH_ONLY=1 $(VIVADO) -mode batch -source scripts/check_core.tcl -log build/vivado_core.log -journal build/vivado_core.jou
 
-impl: synth
+impl:
+	mkdir -p build
+	P7_REGISTERED_SHELL=1 P7_REPORT_DIR=build/vivado_registered $(VIVADO) -mode batch -source scripts/check_core.tcl -log build/vivado_registered.log -journal build/vivado_registered.jou
 
-bit: synth
+bit:
+	@echo "NOT IMPLEMENTED: a board wrapper, clocking and validated constraints are required."
+	@false
 
 report:
-	$(PYTHON) study/make_report_assets.py
+	@echo "Review: docs/CORE_RTL_REVIEW.md; next steps: docs/FPGA_NEXT_STEPS.md"
+	@echo "Machine-readable regression results: build/core_regression/summary.json"
 
 clean:
 	@echo "Generated outputs are ignored by Git; remove only named generated directories manually."
 
+
+.PHONY: hdmi hdmi-sim hdmi-timing
+hdmi:
+	mkdir -p build
+	$(VIVADO) -mode batch -source scripts/build_hdmi.tcl -log build/hdmi_build.log -journal build/hdmi_build.jou
+
+hdmi-sim:
+	$(PYTHON) scripts/video_regression.py
+
+hdmi-timing:
+	$(PYTHON) scripts/hdmi_timing_sim.py --corner functional
+	$(PYTHON) scripts/hdmi_timing_sim.py --corner max
+	$(PYTHON) scripts/hdmi_timing_sim.py --corner min

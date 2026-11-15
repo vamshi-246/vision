@@ -1,0 +1,1 @@
+YosysHQ/picorv32 commit ef203c2b0a3fb793280f5114941416c425c5b461 (ISC licence, see COPYING). Unmodified picorv32.v.

@@ -25,6 +25,10 @@ module tb_ctrl_sync;
     @(negedge clk); in_valid=1; in_eol=1; in_sof=0;
     @(posedge clk); #1;
     if (!sync_error) $fatal(1, "missing malformed-EOL error");
+    @(negedge clk); rst=1;in_valid=0;in_eol=0;
+    @(negedge clk); rst=0;in_valid=1;in_sof=0;
+    @(posedge clk); #1;
+    if(!sync_error) $fatal(1,"missing SOF was not detected");
     $display("PASS tb_ctrl_sync");
     $finish;
   end

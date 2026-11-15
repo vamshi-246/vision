@@ -14,8 +14,8 @@ module vga_timing #(
   parameter int unsigned HC_W     = $clog2(H_TOTAL),
   parameter int unsigned VC_W     = $clog2(V_TOTAL)
 ) (
-  input  logic            clk,
-  input  logic            rst,
+  input  wire             clk,
+  input  wire             rst,
   output logic [HC_W-1:0] h_count,
   output logic [VC_W-1:0] v_count,
   output logic            de,

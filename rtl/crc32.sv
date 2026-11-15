@@ -3,12 +3,12 @@
 // CRC-32/IEEE of raster-order edge bytes: 8'hff for edge, 8'h00 otherwise.
 // The final complement and reflected polynomial match Python zlib.crc32.
 module crc32 (
-  input  logic        clk,
-  input  logic        rst,
-  input  logic        frame_start,
-  input  logic        pixel_valid,
-  input  logic        pixel_edge,
-  input  logic        frame_end,
+  input  wire         clk,
+  input  wire         rst,
+  input  wire         frame_start,
+  input  wire         pixel_valid,
+  input  wire         pixel_edge,
+  input  wire         frame_end,
   output logic [31:0] crc_out,
   output logic        crc_valid
 );

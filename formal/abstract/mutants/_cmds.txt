@@ -1,0 +1,4 @@
+go
+check_fsm
+check_ctlspec
+quit

@@ -1,0 +1,49 @@
+%Warning-DECLFILENAME: rtl/top.sv:7:8: Filename 'top' does not match MODULE name: 'edge_pipeline'
+    7 | module edge_pipeline #(
+      |        ^~~~~~~~~~~~~
+                       ... For warning description see https://verilator.org/warn/DECLFILENAME?v=5.020
+                       ... Use "/* verilator lint_off DECLFILENAME */" and lint_on around source to disable this message.
+%Warning-UNUSEDSIGNAL: rtl/top.sv:64:16: Bits of signal are not used: 'n00'[12:11]
+                                       : ... note: In instance 'edge_pipeline'
+   64 |   logic [12:0] n00,n01,n02,n10,n11,n12,n20,n21,n22;
+      |                ^~~
+%Warning-UNUSEDSIGNAL: rtl/top.sv:64:20: Bits of signal are not used: 'n01'[12:11]
+                                       : ... note: In instance 'edge_pipeline'
+   64 |   logic [12:0] n00,n01,n02,n10,n11,n12,n20,n21,n22;
+      |                    ^~~
+%Warning-UNUSEDSIGNAL: rtl/top.sv:64:24: Bits of signal are not used: 'n02'[12:11]
+                                       : ... note: In instance 'edge_pipeline'
+   64 |   logic [12:0] n00,n01,n02,n10,n11,n12,n20,n21,n22;
+      |                        ^~~
+%Warning-UNUSEDSIGNAL: rtl/top.sv:64:28: Bits of signal are not used: 'n10'[12:11]
+                                       : ... note: In instance 'edge_pipeline'
+   64 |   logic [12:0] n00,n01,n02,n10,n11,n12,n20,n21,n22;
+      |                            ^~~
+%Warning-UNUSEDSIGNAL: rtl/top.sv:64:36: Bits of signal are not used: 'n12'[12:11]
+                                       : ... note: In instance 'edge_pipeline'
+   64 |   logic [12:0] n00,n01,n02,n10,n11,n12,n20,n21,n22;
+      |                                    ^~~
+%Warning-UNUSEDSIGNAL: rtl/top.sv:64:40: Bits of signal are not used: 'n20'[12:11]
+                                       : ... note: In instance 'edge_pipeline'
+   64 |   logic [12:0] n00,n01,n02,n10,n11,n12,n20,n21,n22;
+      |                                        ^~~
+%Warning-UNUSEDSIGNAL: rtl/top.sv:64:44: Bits of signal are not used: 'n21'[12:11]
+                                       : ... note: In instance 'edge_pipeline'
+   64 |   logic [12:0] n00,n01,n02,n10,n11,n12,n20,n21,n22;
+      |                                            ^~~
+%Warning-UNUSEDSIGNAL: rtl/top.sv:64:48: Bits of signal are not used: 'n22'[12:11]
+                                       : ... note: In instance 'edge_pipeline'
+   64 |   logic [12:0] n00,n01,n02,n10,n11,n12,n20,n21,n22;
+      |                                                ^~~
+%Warning-UNUSEDSIGNAL: rtl/top.sv:66:9: Signal is not used: 'nms_keep'
+                                      : ... note: In instance 'edge_pipeline'
+   66 |   logic nms_keep;
+      |         ^~~~~~~~
+%Warning-UNUSEDSIGNAL: rtl/gauss.sv:23:21: Bits of signal are not used: 'weighted_sum'[3:0]
+                                         : ... note: In instance 'edge_pipeline.u_gauss'
+   23 |   logic [SUM_W-1:0] weighted_sum;
+      |                     ^~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: rtl/sobel.sv:14:28: Signal is not used: 'w11'
+                                         : ... note: In instance 'edge_pipeline.u_sobel'
+   14 |   input  wire  [PIX_W-1:0] w11,
+      |                            ^~~

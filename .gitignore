@@ -10,6 +10,8 @@ out/
 *.jou
 *.log
 *.str
+clockInfo.txt
+xelab.pb
 *.xpr
 *.runs/
 *.cache/
@@ -21,3 +23,15 @@ fpga/reports/*.ltx
 tb/vectors/generated/
 results/
 randomtests/
+
+# Vivado/xsim scratch and local-only data
+.Xil/
+xelab.*
+xsim.dir/
+*.pb
+vivado*.backup.*
+demo_photos/
+
+# Not ours to publish: copyrighted artwork and course material (kept locally)
+Demon-Slayer-Anime-3.jpg
+P7_Master_Project_Plan.pdf

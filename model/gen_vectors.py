@@ -26,7 +26,7 @@ def generate(
     entries: list[dict[str, object]] = []
     for name, image in images:
         result = edge_frame(image, cfg)
-        write_hex(outdir / f"{name}_input.hex", image, 2)
+        write_hex(outdir / f"{name}_input.hex", result["gray"], 2)
         entry = dump_result(outdir, name, result, cfg)
         entry["files"]["input"] = f"{name}_input.hex"
         entries.append(entry)

@@ -1,0 +1,12 @@
+PASS core W=7 H=7 frames=42 mode=0 g=1050 s=378 n=42 out=42 first_latency=59
+PASS core W=7 H=7 frames=42 mode=1 g=1050 s=378 n=42 out=42 first_latency=64
+PASS core W=7 H=7 frames=42 mode=2 g=1050 s=378 n=42 out=42 first_latency=1019
+PASS core W=8 H=8 frames=42 mode=0 g=1512 s=672 n=168 out=168 first_latency=65
+PASS core W=8 H=8 frames=42 mode=1 g=1512 s=672 n=168 out=168 first_latency=70
+PASS core W=8 H=8 frames=42 mode=2 g=1512 s=672 n=168 out=168 first_latency=1025
+PASS core W=13 H=9 frames=42 mode=0 g=3234 s=1890 n=882 out=882 first_latency=95
+PASS core W=13 H=9 frames=42 mode=1 g=3234 s=1890 n=882 out=882 first_latency=113
+PASS core W=13 H=9 frames=42 mode=2 g=3234 s=1890 n=882 out=882 first_latency=1055
+PASS core W=31 H=23 frames=42 mode=0 g=25578 s=21546 n=17850 out=17850 first_latency=203
+PASS core W=31 H=23 frames=42 mode=1 g=25578 s=21546 n=17850 out=17850 first_latency=273
+PASS core W=31 H=23 frames=42 mode=2 g=25578 s=21546 n=17850 out=17850 first_latency=1163

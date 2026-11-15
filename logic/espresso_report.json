@@ -1,0 +1,12 @@
+{
+  "before_terms": 10,
+  "before_literals": 40,
+  "after_terms": 4,
+  "after_literals": 10,
+  "nodc_terms": 4,
+  "nodc_literals": 10,
+  "dir1": "(~c0 & ~sx & sy) | (~c0 & sx & ~sy) | (~c0 & c2)",
+  "dir0": "(~c0 & ~c2)",
+  "verified_on_care_rows": true,
+  "tool": "pyeda 0.29.0 Espresso binding"
+}

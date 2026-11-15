@@ -5,13 +5,13 @@
 module apb_regs #(
   parameter logic [31:0] VERSION = 32'h5037_0300
 ) (
-  input  logic        pclk,
-  input  logic        rst,
-  input  logic        psel,
-  input  logic        penable,
-  input  logic        pwrite,
-  input  logic [7:0]  paddr,
-  input  logic [31:0] pwdata,
+  input  wire         pclk,
+  input  wire         rst,
+  input  wire         psel,
+  input  wire         penable,
+  input  wire         pwrite,
+  input  wire  [7:0]  paddr,
+  input  wire  [31:0] pwdata,
   output logic [31:0] prdata,
   output logic        pready,
   output logic        pslverr,
@@ -26,17 +26,17 @@ module apb_regs #(
   output logic [31:0] crc_gold,
   output logic [31:0] auto_cfg,
   output logic [5:0]  hist_idx,
-  input  logic        frame_done_i,
-  input  logic        fifo_underflow_i,
-  input  logic        fifo_overflow_i,
-  input  logic        sync_error_i,
-  input  logic        hist_valid_i,
-  input  logic [19:0] edge_cnt_i,
-  input  logic [31:0] frame_cnt_i,
-  input  logic [31:0] crc_out_i,
-  input  logic [10:0] thr_hi_auto_i,
-  input  logic [10:0] thr_lo_auto_i,
-  input  logic [18:0] hist_data_i
+  input  wire         frame_done_i,
+  input  wire         fifo_underflow_i,
+  input  wire         fifo_overflow_i,
+  input  wire         sync_error_i,
+  input  wire         hist_valid_i,
+  input  wire  [19:0] edge_cnt_i,
+  input  wire  [31:0] frame_cnt_i,
+  input  wire  [31:0] crc_out_i,
+  input  wire  [10:0] thr_hi_auto_i,
+  input  wire  [10:0] thr_lo_auto_i,
+  input  wire  [18:0] hist_data_i
 );
   localparam logic [7:0] CTRL = 8'h00, THR_HI = 8'h04, THR_LO = 8'h08;
   localparam logic [7:0] STATUS = 8'h0c, EDGE_CNT = 8'h10, FRAME_CNT = 8'h14;
@@ -47,6 +47,7 @@ module apb_regs #(
   logic [5:0] sticky;
   logic transfer, write_transfer;
   logic mapped, writable;
+  logic [5:0] sticky_next;
 
   assign transfer = psel && penable;
   assign write_transfer = transfer && pwrite;
@@ -94,24 +95,16 @@ module apb_regs #(
       hist_idx <= '0;
       sticky <= '0;
     end else begin
-      // bit 0 frame done; bits 1-3 sticky errors; bit 4 histogram snapshot;
-      // bit 5 is a live CRC comparison captured at frame completion.
-      if (frame_done_i) sticky[0] <= 1'b1;
-      if (fifo_underflow_i) sticky[1] <= 1'b1;
-      if (fifo_overflow_i) sticky[2] <= 1'b1;
-      if (sync_error_i) sticky[3] <= 1'b1;
-      if (hist_valid_i) sticky[4] <= 1'b1;
-      if (frame_done_i) sticky[5] <= (crc_out_i == crc_gold);
+      sticky <= sticky_next;
 
       if (write_transfer && !pslverr) begin
         unique case (paddr)
           CTRL: begin
             ctrl <= pwdata[5:0];
-            if (pwdata[6]) sticky <= '0;
           end
           THR_HI:   thr_hi <= pwdata[10:0];
           THR_LO:   thr_lo <= pwdata[10:0];
-          STATUS:   sticky <= sticky & ~pwdata[5:0];
+          STATUS:   ; // handled by the set-dominant sticky next-state logic
           CRC_GOLD: crc_gold <= pwdata;
           AUTO_CFG: auto_cfg <= pwdata;
           HIST_IDX: hist_idx <= pwdata[5:0];
@@ -119,6 +112,21 @@ module apb_regs #(
         endcase
       end
     end
+  end
+
+  always_comb begin
+    sticky_next = sticky;
+    if (write_transfer && !pslverr) begin
+      if (paddr == CTRL && pwdata[6]) sticky_next = '0;
+      if (paddr == STATUS) sticky_next = sticky_next & ~pwdata[5:0];
+    end
+    // Events win over simultaneous software clears, so none can be lost.
+    if (frame_done_i) sticky_next[0] = 1'b1;
+    if (fifo_underflow_i) sticky_next[1] = 1'b1;
+    if (fifo_overflow_i) sticky_next[2] = 1'b1;
+    if (sync_error_i) sticky_next[3] = 1'b1;
+    if (hist_valid_i) sticky_next[4] = 1'b1;
+    if (frame_done_i) sticky_next[5] = (crc_out_i == crc_gold);
   end
 endmodule
 

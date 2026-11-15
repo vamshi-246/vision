@@ -1,0 +1,4 @@
+P7_AUX_SYNTH=apb_regs PASS latches=0
+P7_AUX_SYNTH=ctrl_sync PASS latches=0
+P7_AUX_SYNTH=crc32 PASS latches=0
+P7_AUX_SYNTH=hyst_stage PASS latches=0

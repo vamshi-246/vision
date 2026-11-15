@@ -1,0 +1,9 @@
+PASS arithmetic: 512 binary extrema + 100000 random windows, Sobel accepted=94262
+PASS direction exhaustive: 4169764 magnitude/sign combinations, axes, zero and exact 13/32 ties
+PASS NMS: 73728 tie/boundary combinations + 100000 random neighbourhoods
+PASS classifier/histogram: 16384 values, bubbles, 8 snapshots, saturation, clear during valid
+PASS linebuf: 76 SOF abort/restarts, odd frame height, random data, valid gaps
+PASS core reset: 40 abort positions, one-cycle reset, immediate restart
+PASS tb_apb_regs
+PASS tb_ctrl_sync
+PASS CRC: 110 frames, 327395 bytes, zlib oracle, bubbles and adjacent frame boundaries

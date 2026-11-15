@@ -1,0 +1,74 @@
+-- MUTANT M2_frame_end_trap: absorbing state at the last cell: counters freeze, run_en/sof ignored (deadlock-like trap)
+-- NuSMV model of rtl/ctrl_sync.sv  (tiny dimensions: raster WT x HT = 4 x 3, active W x H = 3 x 2)
+-- The environment inputs `sof` and `run_en` are modelled as free state variables so that properties can mention them.
+-- The counters are declared WIDER than the real bound (0..7) so that an out-of-bound bug is representable;
+-- the bound itself is a PROPERTY (P4), not a type restriction.
+MODULE main
+DEFINE
+  WT := 4; HT := 3; AW := 3; AH := 2;
+  at_origin := (x = 0) & (y = 0);
+  last_x := (x = WT - 1);
+  last_y := (y = HT - 1);
+  locked := (st = RUN);
+  pix_ok := locked | (sof & run_en);
+  in_act := pix_ok & (x < AW) & (y < AH);
+  frame_start := pix_ok & at_origin;
+  frame_end   := pix_ok & last_x & last_y;
+  sync_err    := locked & sof & !at_origin;
+VAR
+  st     : {IDLE, RUN};
+  x      : 0..7;
+  y      : 0..7;
+  sof    : boolean;
+  run_en : boolean;
+ASSIGN
+  init(st) := IDLE;
+  init(x)  := 0;
+  init(y)  := 0;
+  next(sof)    := {TRUE, FALSE};
+  next(run_en) := {TRUE, FALSE};
+  next(st) := case
+      st = RUN & last_x & last_y : RUN;
+      st = IDLE & sof & run_en : RUN;
+      st = IDLE                : IDLE;
+      st = RUN & !run_en       : IDLE;
+      TRUE                     : RUN;
+    esac;
+  next(x) := case
+      st = RUN & last_x & last_y : x;
+      st = IDLE & sof & run_en : 1;
+      st = IDLE                : 0;
+      st = RUN & !run_en       : 0;
+      st = RUN & sof & !at_origin : 1;           -- resync: this cycle becomes the origin
+      st = RUN & last_x        : 0;
+      x < 7                    : x + 1;            -- (saturates at the declared range limit; unreachable in the correct design)
+      TRUE                     : x;
+    esac;
+  next(y) := case
+      st = RUN & last_x & last_y : y;
+      st = IDLE                : 0;
+      st = RUN & !run_en       : 0;
+      st = RUN & sof & !at_origin : 0;
+      st = RUN & last_x & last_y : 0;
+      st = RUN & last_x & y < 7 : y + 1;
+      TRUE                     : y;
+    esac;
+
+-- P1  a new frame can always eventually start
+CTLSPEC AG EF frame_start
+-- P2  the controller can always eventually return to idle/reset
+CTLSPEC AG EF (st = IDLE)
+-- P3  no deadlock: every reachable state has a successor, and every RUN state can still reach IDLE
+CTLSPEC AG EX TRUE
+CTLSPEC AG (st = RUN -> EF st = IDLE)
+-- P4  counters never exceed their declared bounds
+CTLSPEC AG (x <= WT - 1)
+CTLSPEC AG (y <= HT - 1)
+-- P5  idle means cleared counters
+CTLSPEC AG (st = IDLE -> (x = 0 & y = 0))
+-- P6  end of raster wraps both counters (when the run continues and no resync is requested)
+CTLSPEC AG ((st = RUN & last_x & last_y & run_en & !(sof & !at_origin)) -> AX (x = 0 & y = 0 & st = RUN))
+-- P7  abort: dropping run_en in RUN returns to IDLE on the next cycle
+CTLSPEC AG ((st = RUN & !run_en) -> AX (st = IDLE))
+-- P8  the end of a frame is reachable from every state (frame/line synchronisation can always complete)
+CTLSPEC AG EF frame_end

@@ -1,0 +1,10 @@
+{
+  "match": true,
+  "pixel_mismatches": 0,
+  "match_percent": 100.0,
+  "expected_strong_edges": 8007,
+  "rtl_strong_edges": 8007,
+  "expected_crc32": "50afd115",
+  "rtl_crc32": "50afd115",
+  "first_mismatches": []
+}

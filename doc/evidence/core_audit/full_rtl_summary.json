@@ -1,0 +1,146 @@
+[
+  {
+    "width": 7,
+    "height": 7,
+    "frames": 42,
+    "mode": 0,
+    "seconds": 0.016,
+    "result": "PASS core W=7 H=7 frames=42 mode=0 g=1050 s=378 n=42 out=42 first_latency=59"
+  },
+  {
+    "width": 7,
+    "height": 7,
+    "frames": 42,
+    "mode": 1,
+    "seconds": 0.016,
+    "result": "PASS core W=7 H=7 frames=42 mode=1 g=1050 s=378 n=42 out=42 first_latency=64"
+  },
+  {
+    "width": 7,
+    "height": 7,
+    "frames": 42,
+    "mode": 2,
+    "seconds": 0.417,
+    "result": "PASS core W=7 H=7 frames=42 mode=2 g=1050 s=378 n=42 out=42 first_latency=1019"
+  },
+  {
+    "width": 8,
+    "height": 8,
+    "frames": 42,
+    "mode": 0,
+    "seconds": 0.016,
+    "result": "PASS core W=8 H=8 frames=42 mode=0 g=1512 s=672 n=168 out=168 first_latency=65"
+  },
+  {
+    "width": 8,
+    "height": 8,
+    "frames": 42,
+    "mode": 1,
+    "seconds": 0.016,
+    "result": "PASS core W=8 H=8 frames=42 mode=1 g=1512 s=672 n=168 out=168 first_latency=70"
+  },
+  {
+    "width": 8,
+    "height": 8,
+    "frames": 42,
+    "mode": 2,
+    "seconds": 0.415,
+    "result": "PASS core W=8 H=8 frames=42 mode=2 g=1512 s=672 n=168 out=168 first_latency=1025"
+  },
+  {
+    "width": 13,
+    "height": 9,
+    "frames": 42,
+    "mode": 0,
+    "seconds": 0.016,
+    "result": "PASS core W=13 H=9 frames=42 mode=0 g=3234 s=1890 n=882 out=882 first_latency=95"
+  },
+  {
+    "width": 13,
+    "height": 9,
+    "frames": 42,
+    "mode": 1,
+    "seconds": 0.032,
+    "result": "PASS core W=13 H=9 frames=42 mode=1 g=3234 s=1890 n=882 out=882 first_latency=113"
+  },
+  {
+    "width": 13,
+    "height": 9,
+    "frames": 42,
+    "mode": 2,
+    "seconds": 0.265,
+    "result": "PASS core W=13 H=9 frames=42 mode=2 g=3234 s=1890 n=882 out=882 first_latency=1055"
+  },
+  {
+    "width": 31,
+    "height": 23,
+    "frames": 42,
+    "mode": 0,
+    "seconds": 0.065,
+    "result": "PASS core W=31 H=23 frames=42 mode=0 g=25578 s=21546 n=17850 out=17850 first_latency=203"
+  },
+  {
+    "width": 31,
+    "height": 23,
+    "frames": 42,
+    "mode": 1,
+    "seconds": 0.115,
+    "result": "PASS core W=31 H=23 frames=42 mode=1 g=25578 s=21546 n=17850 out=17850 first_latency=273"
+  },
+  {
+    "width": 31,
+    "height": 23,
+    "frames": 42,
+    "mode": 2,
+    "seconds": 0.466,
+    "result": "PASS core W=31 H=23 frames=42 mode=2 g=25578 s=21546 n=17850 out=17850 first_latency=1163"
+  },
+  {
+    "width": 320,
+    "height": 240,
+    "frames": 23,
+    "mode": 0,
+    "seconds": 2.471,
+    "result": "PASS core W=320 H=240 frames=23 mode=0 g=1740732 s=1715248 n=1689948 out=1689948 first_latency=1937"
+  },
+  {
+    "width": 320,
+    "height": 240,
+    "frames": 23,
+    "mode": 1,
+    "seconds": 2.923,
+    "result": "PASS core W=320 H=240 frames=23 mode=1 g=1740732 s=1715248 n=1689948 out=1689948 first_latency=2588"
+  },
+  {
+    "width": 320,
+    "height": 240,
+    "frames": 23,
+    "mode": 2,
+    "seconds": 3.527,
+    "result": "PASS core W=320 H=240 frames=23 mode=2 g=1740732 s=1715248 n=1689948 out=1689948 first_latency=2897"
+  },
+  {
+    "width": 640,
+    "height": 480,
+    "frames": 23,
+    "mode": 0,
+    "seconds": 10.097,
+    "result": "PASS core W=640 H=480 frames=23 mode=0 g=7014172 s=6962928 n=6911868 out=6911868 first_latency=3857"
+  },
+  {
+    "width": 640,
+    "height": 480,
+    "frames": 23,
+    "mode": 1,
+    "seconds": 12.6,
+    "result": "PASS core W=640 H=480 frames=23 mode=1 g=7014172 s=6962928 n=6911868 out=6911868 first_latency=5162"
+  },
+  {
+    "width": 640,
+    "height": 480,
+    "frames": 23,
+    "mode": 2,
+    "seconds": 9.741,
+    "result": "PASS core W=640 H=480 frames=23 mode=2 g=7014172 s=6962928 n=6911868 out=6911868 first_latency=4817"
+  }
+]

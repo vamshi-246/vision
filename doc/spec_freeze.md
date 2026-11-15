@@ -1,5 +1,10 @@
 # P0 specification freeze
 
+> Historical P0 snapshot. The 2026-11-13 review uses the supplied problem
+> statement as its scope; change note 002 corrects zero-threshold semantics and
+> streaming corner cases. Vivado and Verilator are now available and were run.
+> See [current core review](../docs/CORE_RTL_REVIEW.md) for measured results.
+
 **Date:** 2026-10-28  
 **Gate:** PASS WITH TOOL LIMITATIONS
 

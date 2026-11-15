@@ -1,0 +1,5 @@
+digraph F { rankdir=LR; node [shape=box,style="rounded,filled",fontname="Helvetica",fillcolor="#e6f5e6"]; edge [fontname="Helvetica",fontsize=10];
+ R [label="C_RESET\ncount 16 clk\napplied <= sw_thr"]; HS [label="C_HI_SETUP\nPSEL=1 PWRITE=1\nPADDR=0x04 PWDATA=THR_HI"]; HA [label="C_HI_ACCESS\nPENABLE=1"];
+ LS [label="C_LO_SETUP\nPADDR=0x08 PWDATA=THR_LO"]; LA [label="C_LO_ACCESS\nPENABLE=1"]; I [label="C_IDLE\nPSEL=0"];
+ R->HS; HS->HA->LS->LA->I; I->HS [label="sw_thr != applied\napplied <= sw_thr"]; I->I [label="sw_thr == applied"];
+}

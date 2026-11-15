@@ -1,0 +1,104 @@
+mkdir -p build
+iverilog -g2012 -Wall -s tb_vga_timing -o build/tb_vga_timing rtl/vga_timing.sv tb/unit/tb_vga_timing.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module vga_timing declared here: rtl/vga_timing.sv:3
+vvp build/tb_vga_timing
+PASS tb_vga_timing
+tb/unit/tb_vga_timing.sv:39: $finish called at 496000 (1ps)
+iverilog -g2012 -Wall -s tb_gauss -o build/tb_gauss rtl/gauss.sv tb/unit/tb_gauss.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module gauss declared here: rtl/gauss.sv:5
+vvp build/tb_gauss
+PASS tb_gauss
+tb/unit/tb_gauss.sv:33: $finish called at 36000 (1ps)
+iverilog -g2012 -Wall -s tb_linebuf -o build/tb_linebuf rtl/linebuf.sv tb/unit/tb_linebuf.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module linebuf declared here: rtl/linebuf.sv:6
+vvp build/tb_linebuf
+PASS tb_linebuf
+tb/unit/tb_linebuf.sv:53: $finish called at 186000 (1ps)
+iverilog -g2012 -Wall -s tb_classify_hist -o build/tb_classify_hist rtl/classify_hist.sv tb/unit/tb_classify_hist.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module classify_hist declared here: rtl/classify_hist.sv:8
+rtl/classify_hist.sv:41: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+vvp build/tb_classify_hist
+PASS tb_classify_hist
+tb/unit/tb_classify_hist.sv:45: $finish called at 81000 (1ps)
+iverilog -g2012 -Wall -s tb_hyst_stage -o build/tb_hyst_stage rtl/linebuf.sv rtl/hyst_stage.sv tb/unit/tb_hyst_stage.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module hyst_stage declared here: rtl/hyst_stage.sv:7
+       :   -- module linebuf declared here: rtl/linebuf.sv:6
+vvp build/tb_hyst_stage
+PASS tb_hyst_stage
+tb/unit/tb_hyst_stage.sv:37: $finish called at 266000 (1ps)
+iverilog -g2012 -Wall -s tb_crc32 -o build/tb_crc32 rtl/crc32.sv tb/unit/tb_crc32.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module crc32 declared here: rtl/crc32.sv:5
+rtl/crc32.sv:34: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+vvp build/tb_crc32
+PASS tb_crc32
+tb/unit/tb_crc32.sv:25: $finish called at 56000 (1ps)
+iverilog -g2012 -Wall -s tb_apb_regs -o build/tb_apb_regs rtl/apb_regs.sv tb/unit/tb_apb_regs.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module apb_regs declared here: rtl/apb_regs.sv:5
+rtl/apb_regs.sv:117: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+rtl/apb_regs.sv:117: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+rtl/apb_regs.sv:69: vvp.tgt sorry: Case unique/unique0 qualities are ignored.
+rtl/apb_regs.sv:101: vvp.tgt sorry: Case unique/unique0 qualities are ignored.
+vvp build/tb_apb_regs
+PASS tb_apb_regs
+tb/unit/tb_apb_regs.sv:67: $finish called at 3010000 (1ps)
+iverilog -g2012 -Wall -s tb_ctrl_sync -o build/tb_ctrl_sync rtl/ctrl_sync.sv tb/unit/tb_ctrl_sync.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module ctrl_sync declared here: rtl/ctrl_sync.sv:5
+vvp build/tb_ctrl_sync
+PASS tb_ctrl_sync
+tb/unit/tb_ctrl_sync.sv:33: $finish called at 176000 (1ps)
+iverilog -g2012 -Wall -s tb_edge_pipeline -o build/tb_edge_pipeline rtl/linebuf.sv rtl/gauss.sv rtl/sobel.sv rtl/dirnms.sv rtl/classify_hist.sv rtl/top.sv tb/unit/tb_edge_pipeline.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module classify_hist declared here: rtl/classify_hist.sv:8
+       :   -- module dirnms declared here: rtl/dirnms.sv:5
+       :   -- module edge_pipeline declared here: rtl/top.sv:7
+       :   -- module gauss declared here: rtl/gauss.sv:5
+       :   -- module linebuf declared here: rtl/linebuf.sv:6
+       :   -- module sobel declared here: rtl/sobel.sv:5
+rtl/classify_hist.sv:41: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+rtl/dirnms.sv:23: vvp.tgt sorry: Case unique/unique0 qualities are ignored.
+vvp build/tb_edge_pipeline
+PASS tb_edge_pipeline
+tb/unit/tb_edge_pipeline.sv:50: $finish called at 816000 (1ps)
+iverilog -g2012 -Wall -s tb_sobel -o build/tb_sobel rtl/sobel.sv tb/unit/tb_sobel.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module sobel declared here: rtl/sobel.sv:5
+vvp build/tb_sobel
+PASS tb_sobel
+tb/unit/tb_sobel.sv:48: $finish called at 106000 (1ps)
+iverilog -g2012 -Wall -s tb_dirnms -o build/tb_dirnms rtl/dirnms.sv tb/unit/tb_dirnms.sv
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module dirnms declared here: rtl/dirnms.sv:5
+rtl/dirnms.sv:23: vvp.tgt sorry: Case unique/unique0 qualities are ignored.
+vvp build/tb_dirnms
+PASS tb_dirnms
+tb/unit/tb_dirnms.sv:31: $finish called at 4000 (1ps)

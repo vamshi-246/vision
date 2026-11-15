@@ -1,0 +1,7 @@
+*hdmi*: xilinx.com:ip:hdmi_acr_ctrl:1.0 xilinx.com:ip:hdmi_gt_controller:1.0 xilinx.com:ip:hdmi_gt_controller:2.0 xilinx.com:ip:v_hdmi_phy1:1.0 xilinx.com:ip:v_hdmi_rx1:1.0 xilinx.com:ip:v_hdmi_rx_ss:3.2 xilinx.com:ip:v_hdmi_rx:3.0 xilinx.com:ip:v_hdmi_rxss1:1.2 xilinx.com:ip:v_hdmi_tx1:1.0 xilinx.com:ip:v_hdmi_tx_ss:3.2 xilinx.com:ip:v_hdmi_tx:3.0 xilinx.com:ip:v_hdmi_txss1:1.2
+*dvi*: 
+*v_tc*: xilinx.com:ip:v_tc:6.1 xilinx.com:ip:v_tc:6.2
+*v_axi4s_vid_out*: xilinx.com:ip:v_axi4s_vid_out:4.0
+*v_vid_in_axi4s*: xilinx.com:ip:v_vid_in_axi4s:4.0 xilinx.com:ip:v_vid_in_axi4s:5.0
+*axi_vdma*: xilinx.com:ip:axi_vdma:6.3
+*clk_wiz*: xilinx.com:ip:clk_wiz:5.4 xilinx.com:ip:clk_wiz:6.0 xilinx.com:ip:clk_wizard:1.0

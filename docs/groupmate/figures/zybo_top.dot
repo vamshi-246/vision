@@ -1,0 +1,8 @@
+digraph Z { rankdir=LR; node [shape=box,style="rounded,filled",fontname="Helvetica",fillcolor="#eef3fb"]; edge [fontname="Helvetica",fontsize=10];
+ clk [label="125 MHz sysclk\n(K17)",fillcolor="#fff3d6"]; mmcm [label="clk_wiz_0 (MMCM)\n25.175 MHz pclk\n125.875 MHz sclk (5x)"];
+ sw [label="SW0,SW1 view\nSW2 thr preset",fillcolor="#fff3d6"];
+ subgraph cluster_d { label="demo_core  (pclk domain)"; style=dashed; fontname="Helvetica";
+  src [label="vga_timing (source)\nstarts K+2 clk ahead"]; rom [label="BRAM TPG\n2 x 320x240 gray\nx2 upsample"]; core [label="core_top"]; ctl [label="APB master FSM\n(thr preset)",fillcolor="#e6f5e6"]; mux [label="view mux\n0 orig 1 smooth\n2 edges 3 overlay"]; dsp [label="vga_timing (display)"]; }
+ dvi [label="rgb2dvi (Digilent)\nTMDS enc + SERDES"]; hdmi [label="HDMI TX pins\nhdmi_tx_clk/n/p",fillcolor="#fff3d6"]; led [label="LD0..LD3",fillcolor="#fff3d6"];
+ clk->mmcm; mmcm->src [label="pclk"]; src->rom->core; ctl->core [label="APB"]; core->mux; dsp->mux [label="de,hs,vs"]; sw->mux; sw->ctl; mux->dvi [label="RGB,DE,HS,VS"]; mmcm->dvi [label="pclk, 5x sclk"]; dvi->hdmi; core->led; ctl->led;
+}

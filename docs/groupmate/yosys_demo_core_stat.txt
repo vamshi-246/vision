@@ -1,0 +1,28 @@
+
+16. Printing statistics.
+
+=== demo_core ===
+
+   Number of wires:               1962
+   Number of wire bits:           9144
+   Number of public wires:         338
+   Number of public wire bits:    2962
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:               1767
+     BUFG                            1
+     CARRY4                        122
+     DSP48E1                         1
+     FDRE                          757
+     FDSE                           14
+     INV                            99
+     LUT2                          233
+     LUT3                           85
+     LUT4                           99
+     LUT5                          102
+     LUT6                          139
+     RAMB18E1                        7
+     RAMB36E1                       35
+     SRL16E                         73
+

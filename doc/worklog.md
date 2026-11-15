@@ -1,5 +1,31 @@
 # Work log
 
+## 009 - 2026-11-13 - core audit, extensive regression and Vivado checks
+
+Reviewed the baseline against the supplied problem statement. Fixed Vivado
+input net declarations, BRAM inference, SOF addressing, zero-threshold
+classification, histogram-clear sample loss, APB clear/event priority and
+missing-SOF detection. Corrected RGB conversion/vector paths and the competing
+golden entry point. Research and board integration remain deferred.
+
+Results: 20 Python tests; 11 existing unit benches; 642 Verilator frame
+presentations with zero differences in 25,862,274 classes; 504 additional
+small-frame Icarus presentations; arithmetic/NMS/histogram/reset/CRC stress;
+4,169,764 direction combinations; six deliberately faulty temporary RTL
+mutants rejected. XSim passed two synthesized-netlist VGA frames (601,032
+classes plus markers/histograms). The supplied photo still matches all 307,200
+bytes with CRC 39abe3c7.
+
+Vivado 2024.2: bare core 3,396 routed LUTs, 4,307 FF, six RAMB18, zero DSP.
+The registered timing shell passes 39.722 ns with setup/hold slack
++20.567/+0.014 ns. Bare OOC boundary hold violations are documented rather
+than treated as board sign-off. Auxiliary control/CRC/hysteresis blocks also
+synthesize without latches. Formal and hardware deployment are not claimed.
+
+See [core review](../docs/CORE_RTL_REVIEW.md),
+[deployment guide](../docs/FPGA_NEXT_STEPS.md) and
+[preserved evidence](evidence/core_audit/).
+
 ## 008 - 2026-10-28 - full-frame RTL regression on supplied Demon-Slayer image
 
 **Artefacts produced.** `model/rtl_image_test.py` prepares a target-resolution
