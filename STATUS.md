@@ -7,7 +7,7 @@
 
 ## Open / not claimed
 * Post-route SDF timing simulation (slow/fast corners): unresolved; boards are programmed with `P7_HW_DEBUG=1`.
-* Zybo Z7-10: built and functionally simulated, **not run on hardware** (no Z7 board available); original Zybo is hardware-tested.
+* Zybo Z7-10: **hardware-verified 2026-11-20** (HDMI TX to monitor, JTAG upload, RV32 firmware; see release/zybo_z7_v1/). Original Zybo also hardware-tested.
 * DDR/DMA frame store and OV7670 camera: not built (BRAM frame store loaded over JTAG-AXI is the stated substitute).
 * The APB CRC register is not connected to a CRC of the edge map.
-* Monitor picture of the final CPU bitstream awaiting the user's visual confirmation.
+* (Closed) Monitor picture confirmed by the user on the Zybo Z7.
