@@ -140,13 +140,27 @@ Steps:
 
 ### 5.2 Edge pipeline vs. the Python golden model: `tb_core_regression` (about 1–3 min at 31x23)
 1. Create simulation set `sim_core` and add `<repo>/tb/system/tb_core_regression.sv`. Set it as top and make `sim_core` active.
-2. Open **Settings > Simulation** for set `sim_core`:
-   - **Compilation** tab: **Generics/Parameters options** = `W=31 H=23 FRAMES=42`. For `vectors_320x240` use `W=320 H=240 FRAMES=23`;
-     that run takes longer.
-   - **Elaboration** tab: `xsim.elaborate.xelab.more_options` = `-timescale 1ns/1ps`. Some RTL files have no `` `timescale`` line, and
-     without this the elaborator stops.
-   - **Simulation** tab: `xsim.simulate.xsim.more_options` = `-testplusarg BASE=/home/<you>/p7_gui/vectors_31x23 -testplusarg MODE=0`,
-     and `xsim.simulate.runtime` = `all`.
+2. Open **Settings > Simulation** for set `sim_core`. Type only the text inside each box below into its field: no backticks, no field name,
+   no `=`. Replace the folder with your own project folder, which must hold the `*.hex` files.
+   - **Compilation** tab, field **Generics/Parameters options** (enter as three entries, or as this text):
+     ```
+     W=31 H=23 FRAMES=42
+     ```
+     For `vectors_320x240` use `W=320 H=240 FRAMES=23`; that run takes longer.
+   - **Elaboration** tab, field `xsim.elaborate.xelab.more_options`:
+     ```
+     -timescale 1ns/1ps
+     ```
+     Some RTL files have no `` `timescale`` line, and without this the elaborator stops.
+   - **Simulation** tab, field `xsim.simulate.xsim.more_options`:
+     ```
+     -testplusarg BASE=/home/vamshi/vision_p7_rtl/vectors_31x23 -testplusarg MODE=0
+     ```
+   - **Simulation** tab, a *different* field, `xsim.simulate.runtime`:
+     ```
+     all
+     ```
+   If the Tcl console shows *Too many positional options*, the `more_options` field contains extra text; clear it and paste only the line above.
 3. Run Behavioral Simulation. Expected:
    `PASS core W=31 H=23 frames=42 mode=0 g=25578 s=21546 n=17850 out=17850 first_latency=203`.
    - It checks every pixel of every stage (Gaussian, Sobel magnitude and direction, NMS, classes, histogram) against the model.
