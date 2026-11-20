@@ -1,5 +1,6 @@
 PYTHON ?= $(if $(wildcard build/venv/bin/python),build/venv/bin/python,python3)
 VIVADO ?= vivado
+XILINX_VIVADO ?= /tools/Xilinx/Vivado/2024.2
 
 .PHONY: smoke golden vectors sim stress regression netlist formal espresso soc video study verify synth impl bit report clean
 
@@ -97,6 +98,14 @@ clean:
 hdmi:
 	mkdir -p build
 	$(VIVADO) -mode batch -source scripts/build_hdmi.tcl -log build/hdmi_build.log -journal build/hdmi_build.jou
+
+live:
+	mkdir -p build
+	P7_BOARD=zybo_z7 P7_LIVE=1 $(VIVADO) -mode batch -source scripts/build_hdmi.tcl -log build/live_build.log -journal build/live_build.jou
+
+live-sim:
+	mkdir -p build/sim_rx_live
+	cd build/sim_rx_live && $(XILINX_VIVADO)/bin/xvlog -sv ../../rtl/video/rx_timing.sv ../../rtl/video/rx_downscale.sv ../../tb/video/tb_rx_live.sv $(XILINX_VIVADO)/data/verilog/src/glbl.v > xvlog.log && $(XILINX_VIVADO)/bin/xelab -L xpm -L unisims_ver tb_rx_live glbl -s tbsim -timescale 1ns/1ps > xelab.log && $(XILINX_VIVADO)/bin/xsim tbsim -R | tee xsim.log | grep -E "TB_RX_LIVE|MISMATCH|frame"
 
 hdmi-sim:
 	$(PYTHON) scripts/video_regression.py

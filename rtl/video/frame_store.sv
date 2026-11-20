@@ -26,7 +26,9 @@ module frame_store #(parameter integer IMG_PIXELS=76800)(
  // CPU RAM / mailbox host ports and run control
  output wire h_ram_en,output wire [3:0] h_ram_we,output wire [10:0] h_ram_addr,output wire [31:0] h_ram_wdata,input wire [31:0] h_ram_rdata,
  output wire h_mb_en,output wire [3:0] h_mb_we,output wire [7:0] h_mb_addr,output wire [31:0] h_mb_wdata,input wire [31:0] h_mb_rdata,
- output logic cpu_run);
+ output logic cpu_run,
+ // live-video word writes (pixel-clock domain, from rx_downscale's FIFO); taken only in cycles without an AXI access
+ input wire live_en,input wire live_valid,input wire [14:0] live_addr,input wire [31:0] live_data,output wire live_pop);
  localparam integer WORDS=IMG_PIXELS/4;
  wire in_image=(a_addr[16:2]<WORDS);
  wire in_ram=(a_addr[16:13]==4'b1010),in_mb=(a_addr[16:13]==4'b1011),in_reg=(a_addr[16:15]==2'b11);
@@ -36,6 +38,11 @@ module frame_store #(parameter integer IMG_PIXELS=76800)(
  always_ff @(posedge clk) if(a_en && in_reg && a_addr[5:2]==4'd4 && |a_we) cpu_run<=a_wdata[0];
  wire [3:0] we_img=(a_en && in_image) ? a_we : 4'b0;
  assign a_img_write=|we_img;
+ assign live_pop=live_en && live_valid && !a_en;
+ wire pa_en=a_en||live_pop;
+ wire [3:0] pa_we=a_en?we_img:{4{live_pop}};
+ wire [14:0] pa_addr=a_en?a_addr[16:2]:live_addr;
+ wire [31:0] pa_din=a_en?a_wdata:live_data;
  wire [31:0] ram_a;
  xpm_memory_tdpram #(
   .MEMORY_SIZE(IMG_PIXELS*8),.MEMORY_PRIMITIVE("block"),.CLOCKING_MODE("common_clock"),
@@ -46,7 +53,7 @@ module frame_store #(parameter integer IMG_PIXELS=76800)(
   .WRITE_DATA_WIDTH_B(8),.READ_DATA_WIDTH_B(8),.BYTE_WRITE_WIDTH_B(8),.ADDR_WIDTH_B(17),
   .READ_RESET_VALUE_B("0"),.READ_LATENCY_B(1),.WRITE_MODE_B("read_first"))
  ram(
-  .clka(clk),.ena(a_en),.wea(we_img),.addra(a_addr[16:2]),.dina(a_wdata),.douta(ram_a),
+  .clka(clk),.ena(pa_en),.wea(pa_we),.addra(pa_addr),.dina(pa_din),.douta(ram_a),
   .clkb(clk),.enb(1'b1),.web(1'b0),.addrb(b_addr),.dinb(8'd0),.doutb(b_data),
   .rsta(1'b0),.rstb(1'b0),.regcea(1'b1),.regceb(1'b1),.sleep(1'b0),
   .injectsbiterra(1'b0),.injectdbiterra(1'b0),.injectsbiterrb(1'b0),.injectdbiterrb(1'b0),

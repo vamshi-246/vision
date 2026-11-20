@@ -6,6 +6,13 @@ if {$board ne "zybo" && $board ne "zybo_z7"} {error "P7_BOARD must be zybo or zy
 set out [file join $root build [expr {$board eq "zybo" ? "hdmi" : "hdmi_z7"}]]
 set xdc_name [expr {$board eq "zybo" ? "zybo_hdmi.xdc" : "zybo_z7_hdmi.xdc"}]
 set defines [expr {$board eq "zybo" ? [list BOARD_ZYBO=1] : [list]}]
+# P7_LIVE=1 (Zybo Z7 only): add the HDMI-RX live-video source (laptop -> J10 at 800x600 -> 320x240 frame store). Output build/hdmi_z7_live/
+set live [info exists ::env(P7_LIVE)]
+if {$live} {
+ if {$board ne "zybo_z7"} {error "P7_LIVE needs P7_BOARD=zybo_z7 (the original Zybo has no separate HDMI RX port)"}
+ lappend defines LIVE_RX=1
+ set out [file join $root build hdmi_z7_live]
+}
 file mkdir $out
 set_param general.maxThreads 1
 create_project -force hdmi [file join $out project] -part xc7z010clg400-1
@@ -16,6 +23,9 @@ set_property -dict [list CONFIG.PRIM_IN_FREQ {125.000} CONFIG.CLKOUT1_REQUESTED_
 # Clocking Wizard resolves the requested pair to a common MMCM and exact 5:1 ratio.
 # Vivado 2024.2 effective solution: M=35.25, D=5, O=35/7; pixel=25.178571 MHz.
 create_ip -name rgb2dvi -vendor digilentinc.com -library ip -module_name hdmi_tx
+if {$live} {
+ set_property CONFIG.PRIM_SOURCE {No_buffer} [get_ips video_clocks]
+}
 set_property -dict [list CONFIG.kGenerateSerialClk {false} CONFIG.kRstActiveHigh {true}] [get_ips hdmi_tx]
 # Image-upload path: JTAG-to-AXI master -> AXI BRAM controller (17-bit byte address, 32K words).
 create_ip -name jtag_axi -vendor xilinx.com -library ip -module_name jtag_axi_master
@@ -29,8 +39,20 @@ foreach src {linebuf gauss dir_decide sobel dirnms classify_hist top vga_timing 
 foreach src {video_delay frame_store edge_video video_soc zybo_hdmi_top} {read_verilog -sv [list [file join $root rtl video ${src}.sv]]}
 foreach src {soc_ram cpu_subsys} {read_verilog -sv [list [file join $root rtl soc ${src}.sv]]}
 read_verilog [list [file join $root third_party picorv32 picorv32.v]]
+if {$live} {
+ foreach src {rx_timing rx_downscale} {read_verilog -sv [list [file join $root rtl video ${src}.sv]]}
+ # copy the sources out of the IP-repository tree (Vivado ignores HDL read from inside an ip_repo_path)
+ set rxsrc [file join $out dvi2rgb_src]
+ file delete -force $rxsrc; file mkdir $rxsrc
+ foreach f [glob [file join $root third_party dvi2rgb src *.vhd] [file join $root third_party dvi2rgb src dgl_800x600.data]] {file copy -force $f $rxsrc}
+ foreach f [glob [file join $rxsrc *.vhd]] {read_vhdl [list $f]}
+ add_files [list [file join $rxsrc dgl_800x600.data]]
+}
 read_xdc [list [file join $root fpga $xdc_name]]
+if {$live} {read_xdc [list [file join $root fpga zybo_z7_live_rx.xdc]]}
 set_property top zybo_hdmi_top [current_fileset]
+# The compile-order scan must see the same defines as synthesis, or files used only under `ifdef are dropped.
+if {[llength $defines]} {set_property verilog_define $defines [current_fileset]}
 update_compile_order -fileset sources_1
 synth_design -top zybo_hdmi_top -part xc7z010clg400-1 -verilog_define $defines
 set_clock_uncertainty 0.100 [all_clocks]

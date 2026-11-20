@@ -70,3 +70,34 @@ run `status` and point at "MATCH" (hardware and model agree on edge count and al
 | `no firmware magic` / `cpu_trap 1` | run `send` again (reloads the firmware) |
 | LD3 lit | alignment fault: BTN0; if it persists, tell the team |
 | Using a **Zybo Z7** | build with `P7_BOARD=zybo_z7` and program with `P7_BOARD=zybo_z7`. This variant is build-and-simulation verified only: no Z7 board was available. |
+
+## 5. Live webcam (Zybo Z7-10 only, `live-video` build)
+Laptop webcam -> laptop HDMI out (USB-C to HDMI cable) -> board **HDMI RX (J10)** -> grayscale, 320x240 -> frame buffer -> the same edge
+pipeline and 640x480 HDMI TX (J11) to the monitor. Hardware-verified 2026-11-20 on the Zybo Z7-10.
+
+Build and program (the bitstream is `build/hdmi_z7_live/zybo_edge_hdmi.bit`):
+```
+make live              # P7_BOARD=zybo_z7 P7_LIVE=1 build (about 6 min)
+make live-sim          # rx_timing + rx_downscale testbench: expects "TB_RX_LIVE PASS"
+/tools/Xilinx/Vivado/2024.2/bin/vivado -mode batch -source scripts/program_live.tcl
+```
+On the laptop:
+1. Plug the cable into J10 firmly (a loose plug was the cause of one failed session). The laptop sees a new display (`DP-1`) whose EDID offers
+   only 800x600@60. If it shows another size or a scaled mode: `xrandr --output DP-1 --mode 800x600 --scale 1x1`
+   (after reprogramming the board, unplug/replug the J10 cable once so the laptop re-reads the EDID).
+2. Start the viewer, which draws the webcam full-screen on that display: `python3 scripts/live_camera.py` (option `--output` if the display is
+   not `DP-1`). **Leave its window open**: it is the video source. It lives on the FPGA display, not on the laptop screen.
+
+Board controls (same as the still demo, plus):
+| Control | Effect |
+|---|---|
+| LD3 | live HDMI-in source active (in this build LD3 is not the alignment-fault LED) |
+| BTN2 | live source off/on (off: checker pattern or the last JTAG-uploaded photo, BTN1 as before) |
+| SW1:0, SW3:2, BTN0, BTN1 | unchanged |
+`fpga_image.py send/status/threshold` still work; the live writes pause only while a JTAG access is in progress.
+
+Why 800x600 in and 640x480 out: Digilent's `dvi2rgb` receiver supports 800x600 and up only (640x480 failed channel alignment on the board),
+and the monitor did not accept an 800x600 signal from the board (a TX-only 800x600 colour-bar test stayed black while 640x480 works). The
+frame buffer decouples the two: RX runs on the laptop's 40 MHz clock, the pipeline and TX on the board's 25.175 MHz clock; a 64-word async
+FIFO crosses between them. Decimation is 2.5:1 nearest-neighbour (rows/columns n with n mod 5 in {0,2}). There is a single frame buffer, so a
+slowly moving tear line is possible (laptop 60.32 Hz vs output 59.94 Hz).

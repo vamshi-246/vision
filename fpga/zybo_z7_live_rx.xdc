@@ -1,0 +1,23 @@
+## Live build only (P7_LIVE=1, Zybo Z7): HDMI RX J10 from the laptop at 800x600@60 (40 MHz). Added on top of zybo_z7_hdmi.xdc.
+set_property -dict {PACKAGE_PIN U18 IOSTANDARD TMDS_33} [get_ports hdmi_rx_clk_p]
+set_property -dict {PACKAGE_PIN U19 IOSTANDARD TMDS_33} [get_ports hdmi_rx_clk_n]
+set_property -dict {PACKAGE_PIN V20 IOSTANDARD TMDS_33} [get_ports {hdmi_rx_p[0]}]
+set_property -dict {PACKAGE_PIN W20 IOSTANDARD TMDS_33} [get_ports {hdmi_rx_n[0]}]
+set_property -dict {PACKAGE_PIN T20 IOSTANDARD TMDS_33} [get_ports {hdmi_rx_p[1]}]
+set_property -dict {PACKAGE_PIN U20 IOSTANDARD TMDS_33} [get_ports {hdmi_rx_n[1]}]
+set_property -dict {PACKAGE_PIN N20 IOSTANDARD TMDS_33} [get_ports {hdmi_rx_p[2]}]
+set_property -dict {PACKAGE_PIN P20 IOSTANDARD TMDS_33} [get_ports {hdmi_rx_n[2]}]
+set_property -dict {PACKAGE_PIN W19 IOSTANDARD LVCMOS33} [get_ports hdmi_rx_hpd]
+set_property -dict {PACKAGE_PIN W18 IOSTANDARD LVCMOS33} [get_ports hdmi_rx_scl]
+set_property -dict {PACKAGE_PIN Y19 IOSTANDARD LVCMOS33} [get_ports hdmi_rx_sda]
+# The clock IPs use No_buffer in the live build, so the 125 MHz board clock is declared here.
+create_clock -period 8.000 -name clk [get_ports clk]
+create_clock -period 25.000 -name dvi_clk [get_ports hdmi_rx_clk_p]
+set_property IODELAY_GROUP dvi2rgb_iodelay_grp [get_cells -hier -filter {NAME =~ *DecoderX/InputSERDES_X/InputDelay}]
+set_property IODELAY_GROUP dvi2rgb_iodelay_grp [get_cells -hier -filter {NAME =~ *TMDS_ClockingX/IDelayCtrlX}]
+set_false_path -to [get_ports hdmi_rx_hpd]
+set_false_path -through [get_pins -filter {NAME =~ */*SyncAsync*/oSyncStages*/PRE || NAME =~ */*SyncAsync*/oSyncStages*/CLR} -hier]
+set_false_path -through [get_pins -filter {NAME =~ */*SyncAsync*/oSyncStages_reg[0]/D} -hier]
+set_false_path -through [get_pins -filter {NAME =~ */*SyncBase*/iIn_q*/PRE || NAME =~ */*SyncBase*/iIn_q*/CLR} -hier]
+# The RX pixel clock is unrelated to the board clock: only the xpm FIFO and 2-FF synchronisers cross between them.
+set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks dvi_clk] -group [get_clocks -include_generated_clocks clk]
