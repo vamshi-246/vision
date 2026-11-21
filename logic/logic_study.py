@@ -337,7 +337,7 @@ def main():
     # factored form of keep, derived from the best kernel: keep = sum over sectors of sel_d * (ge_d gt_d)
     fact = ("keep = ~c0&~c2&( (sx~^sy)&geNW&gtSE + (sx^sy)&geNE&gtSW ) + c0&geW&gtE + ~c0&c2&geN&gtS")
     res["multilevel"]["factored"] = fact
-    res["multilevel"]["factored_literals"] = 2 + 2 + 2 + 2 + 2 + 2 + 2 + 1 + 2 + 2 + 2   # counted from the expression above
+    res["multilevel"]["factored_literals"] = 3 + 4 + 2 + 4 + 4   # c0 geW gtE | ~c0 c2 geN gtS | ~c0 ~c2 | (sx,sy) geNW gtSE | (sx,sy) geNE gtSW
     verilog = """module nms_select(input c0,c2,sx,sy,geW,gtE,geNW,gtSE,geN,gtS,geNE,gtSW, output keep);
   wire [1:0] dir; dir_decide d(.c0(c0),.c2(c2),.sx(sx),.sy(sy),.dir(dir));
   assign keep = (dir==2'b00) ? (geW&gtE) : (dir==2'b01) ? (geNW&gtSE) : (dir==2'b10) ? (geN&gtS) : (geNE&gtSW);

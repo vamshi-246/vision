@@ -2,6 +2,12 @@
  "31x23 mode0": "PASS core W=31 H=23 frames=42 mode=0 g=25578 s=21546 n=17850 out=17850 first_latency=203",
  "31x23 mode1": "PASS core W=31 H=23 frames=42 mode=1 g=25578 s=21546 n=17850 out=17850 first_latency=273",
  "31x23 mode2": "PASS core W=31 H=23 frames=42 mode=2 g=25578 s=21546 n=17850 out=17850 first_latency=1163",
+ "cover_hits": {
+  "c_diag": 28746,
+  "c_weak": 2928,
+  "c_strong": 13071,
+  "c_frame": 126
+ },
  "coverage_by_file": {
   "classify_hist.sv": {
    "points": 65,

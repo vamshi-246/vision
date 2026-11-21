@@ -52,6 +52,11 @@ def main():
         covered = sum(1 for v in tot_pts if v > 0)
         cov[f.name] = dict(points=len(tot_pts), covered=covered, pct=round(100 * covered / max(len(tot_pts), 1), 1))
     allp = sum(v["points"] for v in cov.values()); allc = sum(v["covered"] for v in cov.values())
+    covers = {}
+    for d in datfiles:
+        for m in re.finditer(r"o\x02(c_\w+)\x01.*?' (\d+)", Path(d).read_text(errors="replace")):
+            covers[m.group(1)] = covers.get(m.group(1), 0) + int(m.group(2))
+    res["cover_hits"] = covers; print("cover hits:", covers)
     res["coverage_by_file"] = cov; res["coverage_total_pct"] = round(100 * allc / max(allp, 1), 1)
     # assertion sanity: a mutant must fail an assertion
     mexe = build(31, 23, len(frames), "31x23_mut", [("rtl/classify_hist.sv", "cls <= 2'b10;", "cls <= 2'b11;"),

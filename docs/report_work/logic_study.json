@@ -252,7 +252,7 @@
    }
   ],
   "factored": "keep = ~c0&~c2&( (sx~^sy)&geNW&gtSE + (sx^sy)&geNE&gtSW ) + c0&geW&gtE + ~c0&c2&geN&gtS",
-  "factored_literals": 21
+  "factored_literals": 17
  },
  "abc": {
   "aig_and_not": {

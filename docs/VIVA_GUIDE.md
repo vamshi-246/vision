@@ -261,7 +261,7 @@ A **CDFG** is a graph of operations (nodes) and data dependencies (edges). Trans
   * The zero border of 6,684 pixels is added to bin 0, so our histogram equals the paper's whole-frame histogram.
 * **Results:**
   * Thresholds are **identical** to the paper engine on all 6 images (102, 110, 98, 84, 46, 80), and all 300,516 classes per image are equal.
-  * Cost: +1 BRAM tile, +10 DSP, Fmax 53 MHz (more than 2× the 25.2 MHz needed). The paper's version: 80 RAMB36, which does not fit.
+  * Cost: +1 BRAM tile, +10 DSP, Fmax 52 MHz (more than 2× the 25.2 MHz needed). The slow path is the paper's combinational 48-bit log₂ unit (25 logic levels); one more pipeline register would fix it. The paper's version: 80 RAMB36, which does not fit.
   * Quality: the strong-edge F1 rises from 0.41 to 0.83, because a fixed T_hi = 192 is too high for low-contrast images (e.g. *chelsea* gets T_hi = 46).
   * For the strong+weak map, our fixed 64/192 thresholds are slightly better (0.925 vs 0.877). Say this honestly; there is a trade-off.
 * **Status:** verified in simulation and synthesised, but **not yet in the board bitstream** (planned future work).
@@ -294,10 +294,10 @@ A **CDFG** is a graph of operations (nodes) and data dependencies (edges). Trans
 | dir_decide | 10 terms / 40 literals → 4 / 10 |
 | BDD comparator | 554 / 403 / 4,085 nodes → 235 after sifting |
 | CTL | 25 properties (12 controller, 10 vga_timing, 3 ctrl_sync) |
-| SVA / coverage | 13 assertions, 5 covers, 96.3% line+toggle |
+| SVA / coverage | 13 assertions, 4 covers (all hit), 96.3% line+toggle (31×23 run) |
 | Pixels compared | 29,751,084 at 640×480, 0 mismatches |
 | HW vs SW | 437 clocks/pixel in software, 437× speed-up |
-| Paper (streaming) | T_hi identical on 6 images; +1 BRAM, +10 DSP vs 80 RAMB36 |
+| Paper (streaming) | T_hi identical on 6 images; 3,385 LUT, +1 BRAM, +10 DSP, 52 MHz vs 80 RAMB36 |
 
 ---
 
@@ -349,7 +349,7 @@ A **CDFG** is a graph of operations (nodes) and data dependencies (edges). Trans
 **Verification**
 34. *How do you know your testbench is good?* Mutation testing (7 + 1 mutants caught), 96% coverage, an exhaustive direction test, and two independent golden models that agree.
 35. *What is `bind`?* It attaches an assertion module to an RTL module without editing the RTL.
-36. *What did simulation find?* A zero-threshold corner case (a zero NMS value became "weak"), a histogram clear losing a sample, an APB status event lost on a simultaneous clear, and a Gaussian data/valid skew. On hardware: BTN0 reset the thresholds to the presets (fixed in the firmware).
+36. *What did simulation find?* A zero-threshold corner case (a zero NMS value became "weak"), a histogram clear losing a sample, and an APB status event lost on a simultaneous clear. On hardware: BTN0 reset the thresholds to the presets (fixed in the firmware).
 
 **Paper**
 37. *Why didn't you implement the paper exactly?* It needs a frame buffer of 80 RAMB36, but the chip has 60. We kept their Otsu unit and changed the architecture to streaming.

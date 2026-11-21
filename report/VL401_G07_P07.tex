@@ -500,7 +500,8 @@ unchanged) and run in Verilator with \texttt{--assert} during the regression: wi
 in range (A2), EOL wraps the column (A3), $|G_x|+|G_y|\le2040$ (A4), Sobel latency exactly 4 with II$=$1 (A5,
 Listing~\ref{lst:sva}), class never 2'b11 (A6), one class per NMS pixel one clock later (A7), strong implies $m\ge T_\text{hi}$
 (A8), frame end swaps histogram banks (A9), output coordinates within $[3,W{-}4]\times[3,H{-}4]$ (A10), SOF/EOL markers (A11, A12),
-NMS never invents a magnitude (A13); 5 cover properties confirm weak, strong, diagonal and end-of-frame cases occur. A mutant
+NMS never invents a magnitude (A13); 4 cover properties (weak class, strong class, diagonal direction, end of frame) are all hit
+(31$\times$23 regression, 42 frames, 3 timing modes). A mutant
 classifier that outputs 2'b11 fails A6.
 \begin{lstlisting}[language=Verilog,caption={Assertion A5: initiation interval 1 and fixed latency of the hand-HLS Sobel.},label={lst:sva}]
 a_latency4: assert property (@(posedge clk) out_valid == $past(in_valid, 4));  // in module sobel_sva
@@ -516,7 +517,7 @@ Core regressions (6 sizes 7$\times$7 \ldots 640$\times$480, 3 timing modes) & 18
 Pixels compared bit-exactly with the model at 640$\times$480 (33 frames $\times$ 3 modes), 0 mismatches & 29{,}751{,}084\\
 Unit + stress benches; video (28 runs); SoC (6 scenarios); HDMI-in & all PASS\\
 Exhaustive direction cases / random Sobel windows (0 mismatches) & 4{,}169{,}764 / 100{,}000\\
-Assertions (concurrent SVA) / cover properties & 13 (0 failures) / 5 (all hit)\\
+Assertions (concurrent SVA) / cover properties (31$\times$23 run) & 13 (0 failures) / 4 (all hit)\\
 Line + toggle coverage of the core RTL (Verilator; 4 modules at 100\%, classifier 87.7\%) & 96.3\%\\
 RTL mutants caught by the scoreboard & 7/7\\
 \bottomrule
@@ -526,7 +527,7 @@ The uncovered points are the histogram saturation branches (a 19-bit counter can
 tested separately by \texttt{tb\_hist\_stress}) and toggles of the upper coordinate bits at this small size.
 \textbf{Bugs found by simulation:} a zero NMS value became ``weak'' when $T_\text{lo}=0$ (now always class 0); a histogram clear
 dropped the class of the pixel in the same cycle; an APB status event was lost when software cleared it in the same cycle
-(now set-dominant, later proved in SymbiYosys); a one-cycle data/valid skew in the Gaussian stage. On hardware: BTN0 reset the
+(now set-dominant, later proved in SymbiYosys). On hardware: BTN0 reset the
 APB bank and silently returned thresholds to the switch presets (firmware now re-asserts CTRL every frame).
 
 %% =====================================================================
@@ -643,9 +644,9 @@ from frame 2, and frames shorter than one sweep are detected as overruns and nev
 \toprule
 Metric & Baseline (fixed 64/192) & Enhanced (streaming Otsu) & Paper engine (whole frame)\\
 \midrule
-LUT / FF & 2{,}108 / 3{,}080 & 3{,}489 / 3{,}518 & 6{,}206 / 8{,}858 (engine only)\\
+LUT / FF & 2{,}108 / 3{,}080 & 3{,}385 / 3{,}519 & 6{,}206 / 8{,}858 (engine only)\\
 BRAM / DSP & 3 tiles / 0 & 4 tiles / 10 & 80 RAMB36 (does not fit) / 10\\
-F$_\text{max}$ (MHz; 25.2 needed) & 87 & 53 & synthesis only\\
+F$_\text{max}$ (MHz; 25.2 needed) & 87 & 52 & synthesis only\\
 Threshold & fixed & per frame, $=$ paper & per frame\\
 Extra delay & -- & threshold lags 1 frame & output lags 1 frame\\
 F1 strong / strong+weak & 0.407 / 0.925 & 0.829 / 0.877 & 0.829 / 0.877\\
@@ -658,7 +659,9 @@ because the fixed 192 is too high for low-contrast images (e.g.\ \emph{chelsea},
 fixed 64/192 pair scores slightly higher (0.925 vs.\ 0.877); the paper's $T_\text{lo}=T_\text{hi}/2$ admits more weak pixels (33{,}652
 vs.\ 22{,}973 on average). Our quality numbers equal the paper engine's exactly because the thresholds are identical; we do not reproduce
 the paper's own figures (different images, different reference). The cost is 10 DSP slices for the two 32$\times$32 products of the
-Otsu score and an $F_\text{max}$ of 53\,MHz (the log unit's leading-zero counter is combinational), still twice the pixel clock. The
+Otsu score, and an $F_\text{max}$ of 52\,MHz: the critical path (25 logic levels) runs from the $|D|$ register through the paper's
+combinational 48-bit $\log_2$ unit (leading-zero count, normalising shift, interpolation) into the score register. That is still twice
+the pixel clock; one more pipeline register in the log unit would remove it. The
 enhanced design is verified in simulation and synthesised; it is not yet in the board bitstream.
 
 %% =====================================================================
@@ -742,7 +745,7 @@ FSM minimisation/encoding, QM/UCP, BDD, SymbiYosys, SVA/coverage). Both members 
 supplied); Berkeley ESPRESSO, PyEDA, \texttt{dd}, NuSMV 2.6, Yosys/ABC, SymbiYosys with z3, Verilator, Icarus Verilog.\\
 \textbf{AI-tool use:} Claude Code (Anthropic) was used extensively as a programming and analysis assistant: writing and debugging RTL,
 testbenches and analysis scripts, running the tool flows, and drafting parts of this report. Every number in the report is produced by a
-script in the repository and was re-run; we reviewed the design decisions and results and take responsibility for them.
+script or tool log in the repository; we reviewed the design decisions and results and take responsibility for them.
 
 %% =====================================================================
 \begin{thebibliography}{99}\small
@@ -805,11 +808,12 @@ out-of-range coordinate raises \emph{sync\_error}, $\mathbf{AG\,EF}$ clean strea
 Image & camera & astronaut & coins & coffee & chelsea & rocket\\
 \midrule
 $T_\text{hi}$ (paper RTL = our streaming unit) & 102 & 110 & 98 & 84 & 46 & 80\\
-Exact Otsu threshold (float) & 102 & 102 & 94 & 88 & 44 & 76\\
+Exact Otsu $k$ (float; class 0 $=\{\le k\}$) & 102 & 102 & 94 & 88 & 44 & 76\\
+Difference to $k$ or $k{+}1$ (levels) & 0 & 7 & 3 & 4 & 1 & 3\\
 \bottomrule
 \end{tabular}
 \end{table}
-The differences (0--7 levels) come from the 16-segment piecewise-linear $\log_2$ approximation of the paper's unit.
+Because the float threshold separates $k$ from $k{+}1$, the difference is taken to the nearer of the two. The differences (0--7 levels) come from the 16-segment piecewise-linear $\log_2$ approximation of the paper's unit.
 
 \subsection{NuSMV model of the controller (excerpt of the property file)}
 \begin{lstlisting}[language=SMV]
