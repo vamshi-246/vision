@@ -1,0 +1,41 @@
+{
+ "enh_edge_pipeline_otsu": {
+  "lut": 3489.0,
+  "ff": 3518.0,
+  "ramb36": 0.0,
+  "ramb18": 8.0,
+  "bram_tiles": 4.0,
+  "dsp": 10.0,
+  "period": 10.0,
+  "wns": -8.839,
+  "whs": 0.12,
+  "path_ns": 18.839,
+  "fmax_mhz": 53.1
+ },
+ "enh_otsu_stream_alone": {
+  "lut": 1336.0,
+  "ff": 437.0,
+  "ramb36": 0.0,
+  "ramb18": 2.0,
+  "bram_tiles": 1.0,
+  "dsp": 10.0,
+  "period": 10.0,
+  "wns": -9.604,
+  "whs": 0.132,
+  "path_ns": 19.604,
+  "fmax_mhz": 51.0
+ },
+ "base_edge_pipeline_now": {
+  "lut": 2108.0,
+  "ff": 3080.0,
+  "ramb36": 0.0,
+  "ramb18": 6.0,
+  "bram_tiles": 3.0,
+  "dsp": 0.0,
+  "period": 10.0,
+  "wns": -1.465,
+  "whs": 0.11,
+  "path_ns": 11.465,
+  "fmax_mhz": 87.2
+ }
+}

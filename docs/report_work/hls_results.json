@@ -1,0 +1,496 @@
+{
+ "versions": [
+  {
+   "name": "Original (3x3 convolution, loop order)",
+   "mul": 22,
+   "add": 19,
+   "abs": 2,
+   "critical": 12,
+   "ops": 43
+  },
+  {
+   "name": "+ constant folding, dead-code elimination",
+   "mul": 8,
+   "add": 13,
+   "abs": 2,
+   "critical": 9,
+   "ops": 23
+  },
+  {
+   "name": "+ strength reduction (x2, x32 wiring; x13 shift-add)",
+   "mul": 0,
+   "add": 17,
+   "abs": 2,
+   "critical": 9,
+   "ops": 19
+  },
+  {
+   "name": "+ tree-height reduction",
+   "mul": 0,
+   "add": 17,
+   "abs": 2,
+   "critical": 7,
+   "ops": 19
+  },
+  {
+   "name": "+ CSE of E1, E2 (shipped kernel)",
+   "mul": 0,
+   "add": 15,
+   "abs": 2,
+   "critical": 7,
+   "ops": 17
+  }
+ ],
+ "asap_alap": {
+  "E1": {
+   "type": "ADD",
+   "text": "p22-p00",
+   "asap": 1,
+   "alap": 1,
+   "mobility": 0
+  },
+  "E2": {
+   "type": "ADD",
+   "text": "p02-p20",
+   "asap": 1,
+   "alap": 1,
+   "mobility": 0
+  },
+  "F": {
+   "type": "ADD",
+   "text": "p12-p10",
+   "asap": 1,
+   "alap": 2,
+   "mobility": 1
+  },
+  "G": {
+   "type": "ADD",
+   "text": "p21-p01",
+   "asap": 1,
+   "alap": 2,
+   "mobility": 1
+  },
+  "P": {
+   "type": "ADD",
+   "text": "E1+E2",
+   "asap": 2,
+   "alap": 2,
+   "mobility": 0
+  },
+  "Q": {
+   "type": "ADD",
+   "text": "E1-E2",
+   "asap": 2,
+   "alap": 2,
+   "mobility": 0
+  },
+  "Gx": {
+   "type": "ADD",
+   "text": "P+2F",
+   "asap": 3,
+   "alap": 3,
+   "mobility": 0
+  },
+  "Gy": {
+   "type": "ADD",
+   "text": "Q+2G",
+   "asap": 3,
+   "alap": 3,
+   "mobility": 0
+  },
+  "absx": {
+   "type": "ABS",
+   "text": "|Gx|",
+   "asap": 4,
+   "alap": 4,
+   "mobility": 0
+  },
+  "absy": {
+   "type": "ABS",
+   "text": "|Gy|",
+   "asap": 4,
+   "alap": 4,
+   "mobility": 0
+  },
+  "mag": {
+   "type": "ADD",
+   "text": "|Gx|+|Gy|",
+   "asap": 5,
+   "alap": 7,
+   "mobility": 2
+  },
+  "t13absx": {
+   "type": "ADD",
+   "text": "8absx+4absx",
+   "asap": 5,
+   "alap": 5,
+   "mobility": 0
+  },
+  "m13absx": {
+   "type": "ADD",
+   "text": "13absx",
+   "asap": 6,
+   "alap": 6,
+   "mobility": 0
+  },
+  "c0": {
+   "type": "ADD",
+   "text": "32absy<=13absx",
+   "asap": 7,
+   "alap": 7,
+   "mobility": 0
+  },
+  "t13absy": {
+   "type": "ADD",
+   "text": "8absy+4absy",
+   "asap": 5,
+   "alap": 5,
+   "mobility": 0
+  },
+  "m13absy": {
+   "type": "ADD",
+   "text": "13absy",
+   "asap": 6,
+   "alap": 6,
+   "mobility": 0
+  },
+  "c2": {
+   "type": "ADD",
+   "text": "32absx<=13absy",
+   "asap": 7,
+   "alap": 7,
+   "mobility": 0
+  }
+ },
+ "latency_bound": 7,
+ "asap_max_units": {
+  "ADD": 4,
+  "ABS": 2
+ },
+ "list": {
+  "r2a1b": {
+   "resources": {
+    "ADD": 2,
+    "ABS": 1
+   },
+   "latency": 9,
+   "schedule": {
+    "E1": 1,
+    "E2": 1,
+    "P": 2,
+    "Q": 2,
+    "F": 3,
+    "G": 3,
+    "Gx": 4,
+    "Gy": 4,
+    "absx": 5,
+    "t13absx": 6,
+    "absy": 6,
+    "t13absy": 7,
+    "m13absx": 7,
+    "m13absy": 8,
+    "c0": 8,
+    "c2": 9,
+    "mag": 9
+   },
+   "lifetimes": {
+    "E1": [
+     1,
+     2
+    ],
+    "E2": [
+     1,
+     2
+    ],
+    "F": [
+     3,
+     4
+    ],
+    "G": [
+     3,
+     4
+    ],
+    "P": [
+     2,
+     4
+    ],
+    "Q": [
+     2,
+     4
+    ],
+    "Gx": [
+     4,
+     5
+    ],
+    "Gy": [
+     4,
+     6
+    ],
+    "absx": [
+     5,
+     9
+    ],
+    "absy": [
+     6,
+     9
+    ],
+    "mag": [
+     9,
+     10
+    ],
+    "t13absx": [
+     6,
+     7
+    ],
+    "m13absx": [
+     7,
+     8
+    ],
+    "t13absy": [
+     7,
+     8
+    ],
+    "m13absy": [
+     8,
+     9
+    ]
+   },
+   "registers": [
+    [
+     "E1",
+     "P",
+     "Gx",
+     "absx",
+     "mag"
+    ],
+    [
+     "E2",
+     "Q",
+     "Gy",
+     "t13absx",
+     "m13absx",
+     "m13absy"
+    ],
+    [
+     "F",
+     "absy"
+    ],
+    [
+     "G",
+     "t13absy"
+    ]
+   ],
+   "fu_binding": {
+    "ADD": [
+     [
+      "E1",
+      "P",
+      "F",
+      "Gx",
+      "t13absx",
+      "m13absx",
+      "c0",
+      "mag"
+     ],
+     [
+      "E2",
+      "Q",
+      "G",
+      "Gy",
+      "t13absy",
+      "m13absy",
+      "c2"
+     ]
+    ],
+    "ABS": [
+     [
+      "absx",
+      "absy"
+     ]
+    ]
+   }
+  },
+  "r1a1b": {
+   "resources": {
+    "ADD": 1,
+    "ABS": 1
+   },
+   "latency": 15,
+   "schedule": {
+    "E1": 1,
+    "E2": 2,
+    "P": 3,
+    "Q": 4,
+    "F": 5,
+    "G": 6,
+    "Gx": 7,
+    "Gy": 8,
+    "absx": 8,
+    "t13absx": 9,
+    "absy": 9,
+    "t13absy": 10,
+    "m13absx": 11,
+    "m13absy": 12,
+    "c0": 13,
+    "c2": 14,
+    "mag": 15
+   },
+   "lifetimes": {
+    "E1": [
+     1,
+     4
+    ],
+    "E2": [
+     2,
+     4
+    ],
+    "F": [
+     5,
+     7
+    ],
+    "G": [
+     6,
+     8
+    ],
+    "P": [
+     3,
+     7
+    ],
+    "Q": [
+     4,
+     8
+    ],
+    "Gx": [
+     7,
+     8
+    ],
+    "Gy": [
+     8,
+     9
+    ],
+    "absx": [
+     8,
+     15
+    ],
+    "absy": [
+     9,
+     15
+    ],
+    "mag": [
+     15,
+     16
+    ],
+    "t13absx": [
+     9,
+     11
+    ],
+    "m13absx": [
+     11,
+     13
+    ],
+    "t13absy": [
+     10,
+     12
+    ],
+    "m13absy": [
+     12,
+     14
+    ]
+   },
+   "registers": [
+    [
+     "E1",
+     "Q",
+     "Gy",
+     "t13absx",
+     "m13absx",
+     "mag"
+    ],
+    [
+     "E2",
+     "F",
+     "Gx",
+     "absx"
+    ],
+    [
+     "P",
+     "absy"
+    ],
+    [
+     "G",
+     "t13absy",
+     "m13absy"
+    ]
+   ],
+   "fu_binding": {
+    "ADD": [
+     [
+      "E1",
+      "E2",
+      "P",
+      "Q",
+      "F",
+      "G",
+      "Gx",
+      "Gy",
+      "t13absx",
+      "t13absy",
+      "m13absx",
+      "m13absy",
+      "c0",
+      "c2",
+      "mag"
+     ]
+    ],
+    "ABS": [
+     [
+      "absx",
+      "absy"
+     ]
+    ]
+   }
+  }
+ },
+ "ilp": {
+  "7": {
+   "ABS": 2,
+   "ADD": 3
+  },
+  "8": {
+   "ABS": 1,
+   "ADD": 3
+  },
+  "9": {
+   "ABS": 1,
+   "ADD": 2
+  },
+  "10": {
+   "ABS": 1,
+   "ADD": 2
+  },
+  "11": {
+   "ABS": 1,
+   "ADD": 2
+  },
+  "12": {
+   "ABS": 1,
+   "ADD": 2
+  },
+  "13": {
+   "ABS": 1,
+   "ADD": 2
+  },
+  "14": {
+   "ABS": 1,
+   "ADD": 2
+  },
+  "15": {
+   "ABS": 1,
+   "ADD": 1
+  },
+  "16": {
+   "ABS": 1,
+   "ADD": 1
+  }
+ }
+}
