@@ -370,7 +370,7 @@ def gen_fsmd(name, ops, sched, regs, fus):
 
 def dot_dfg(ops, sched, path, title):
     col = {"ADD": "lightblue", "ABS": "khaki", "MUL": "salmon"}
-    L = ["digraph G {", "rankdir=TB; node [shape=circle, style=filled, fontsize=10, fixedsize=true, width=0.62];",
+    L = ["digraph G {", "rankdir=LR; nodesep=0.12; ranksep=0.35; node [shape=circle, style=filled, fontsize=10, fixedsize=true, width=0.62];",
          f'labelloc=t; label="{title}";']
     for p in INPUTS:
         L.append(f'"{p}" [shape=box, fillcolor=white, width=0.45, height=0.3];')
