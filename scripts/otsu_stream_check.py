@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "build/otsu"; OUT.mkdir(parents=True, exist_ok=True)
 SRC = ["rtl/linebuf.sv", "rtl/gauss.sv", "rtl/dir_decide.sv", "rtl/sobel.sv", "rtl/dirnms.sv", "rtl/classify_hist.sv",
        *[f"rtl/study/paper/{f}.sv" for f in ("paper_frame_buffer", "paper_histogram", "paper_otsu_logunit", "paper_classify", "paper_top")],
-       "rtl/otsu_stream.sv", "rtl/study/edge_pipeline_otsu.sv", "tb/study/tb_otsu_stream.sv"]
+       "rtl/otsu_ctrl.sv", "rtl/otsu_stream.sv", "rtl/study/edge_pipeline_otsu.sv", "tb/study/tb_otsu_stream.sv"]
 IMGS = ["camera", "astronaut", "coins", "coffee", "chelsea", "rocket"]
 
 def build(w, h, frames, hb, vb):

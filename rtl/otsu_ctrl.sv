@@ -33,12 +33,14 @@ module otsu_ctrl #(
   output logic      clr_one,  // clear the swept bank (CLEAR)
   output logic      swap,     // swap banks and start the Otsu sweep (pulse)
   output logic      apply,    // load the Otsu result into the threshold registers (pulse)
-  output logic      init_done // INIT finished: reset bank totals and flags (pulse)
+  output logic      init_done, // INIT finished: reset bank totals and flags (pulse)
+  output logic      sweeping   // SWEEP or CLEAR: a frame that ends now overruns
 );
   logic [2:0] next;
 
   always_comb begin
     next = state;
+    sweeping = (state == C_SWEEP) || (state == C_CLEAR);
     count_en = 1'b0; clr_both = 1'b0; clr_one = 1'b0; swap = 1'b0; apply = 1'b0; init_done = 1'b0;
     unique case (state)
       C_INIT: begin

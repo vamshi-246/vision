@@ -1,0 +1,80 @@
+{
+ "fsm_binary_user": {
+  "lut": 16.0,
+  "ff": 17.0,
+  "ramb36": 0.0,
+  "ramb18": 0.0,
+  "bram_tiles": 0.0,
+  "dsp": 0.0,
+  "period": 1.5,
+  "wns": -0.856,
+  "whs": 0.223,
+  "path_ns": 2.356,
+  "fmax_mhz": 424.4
+ },
+ "fsm_sequential": {
+  "lut": 16.0,
+  "ff": 17.0,
+  "ramb36": 0.0,
+  "ramb18": 0.0,
+  "bram_tiles": 0.0,
+  "dsp": 0.0,
+  "period": 1.5,
+  "wns": -0.961,
+  "whs": 0.213,
+  "path_ns": 2.461,
+  "fmax_mhz": 406.3
+ },
+ "fsm_one_hot": {
+  "lut": 12.0,
+  "ff": 20.0,
+  "ramb36": 0.0,
+  "ramb18": 0.0,
+  "bram_tiles": 0.0,
+  "dsp": 0.0,
+  "period": 1.5,
+  "wns": -0.951,
+  "whs": 0.177,
+  "path_ns": 2.451,
+  "fmax_mhz": 408.0
+ },
+ "fsm_gray": {
+  "lut": 17.0,
+  "ff": 17.0,
+  "ramb36": 0.0,
+  "ramb18": 0.0,
+  "bram_tiles": 0.0,
+  "dsp": 0.0,
+  "period": 1.5,
+  "wns": -0.749,
+  "whs": 0.191,
+  "path_ns": 2.249,
+  "fmax_mhz": 444.6
+ },
+ "fsm_johnson": {
+  "lut": 16.0,
+  "ff": 17.0,
+  "ramb36": 0.0,
+  "ramb18": 0.0,
+  "bram_tiles": 0.0,
+  "dsp": 0.0,
+  "period": 1.5,
+  "wns": -0.748,
+  "whs": 0.238,
+  "path_ns": 2.248,
+  "fmax_mhz": 444.8
+ },
+ "fsm_heuristic_user": {
+  "lut": 15.0,
+  "ff": 17.0,
+  "ramb36": 0.0,
+  "ramb18": 0.0,
+  "bram_tiles": 0.0,
+  "dsp": 0.0,
+  "period": 1.5,
+  "wns": -0.899,
+  "whs": 0.195,
+  "path_ns": 2.399,
+  "fmax_mhz": 416.8
+ }
+}

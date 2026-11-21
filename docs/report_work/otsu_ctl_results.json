@@ -1,0 +1,140 @@
+{
+ "properties": {
+  "P1": {
+   "type": "Safety",
+   "ctl": "AG !(bool(top._clr_both) & bool(top._count_en))",
+   "fairness": false,
+   "result": true
+  },
+  "P2": {
+   "type": "Safety",
+   "ctl": "AG !(bool(top._clr_both) & bool(top._clr_one))",
+   "fairness": false,
+   "result": true
+  },
+  "P3": {
+   "type": "Safety (frame-aligned update)",
+   "ctl": "AG (bool(top._apply) -> ((top._state = 0ub3_101) & bool(top._eof)) | ((top._state = 0ub3_100) & !bool(top._px)))",
+   "fairness": false,
+   "result": true
+  },
+  "P4": {
+   "type": "Safety",
+   "ctl": "AG (bool(top._swap) -> AX top._state = 0ub3_011)",
+   "fairness": false,
+   "result": true
+  },
+  "P5": {
+   "type": "Safety (legal states)",
+   "ctl": "AG (top._state <= 0ub3_101)",
+   "fairness": false,
+   "result": true
+  },
+  "P6": {
+   "type": "Reachability",
+   "ctl": "EF (top._state = 0ub3_101 & bool(top._apply))",
+   "fairness": false,
+   "result": true
+  },
+  "P7": {
+   "type": "Non-blocking (reset reachable)",
+   "ctl": "AG EF top._state = 0ub3_000",
+   "fairness": false,
+   "result": true
+  },
+  "P8": {
+   "type": "Liveness, no fairness",
+   "ctl": "AG (top._state = 0ub3_011 -> AF top._state = 0ub3_100)",
+   "fairness": false,
+   "result": false
+  },
+  "P9": {
+   "type": "Liveness, fair",
+   "ctl": "AG (top._state = 0ub3_011 -> AF top._state = 0ub3_100)",
+   "fairness": true,
+   "result": true
+  },
+  "P10": {
+   "type": "Liveness, fair (every swap ends in a threshold update or a re-arm)",
+   "ctl": "AG (bool(top._swap) -> AX AF (bool(top._apply) | top._state = 0ub3_000))",
+   "fairness": true,
+   "result": true
+  },
+  "P11": {
+   "type": "Until, fair (counting continues while the sweep runs)",
+   "ctl": "AG (top._state = 0ub3_011 -> A[bool(top._count_en) U top._state = 0ub3_100])",
+   "fairness": true,
+   "result": true
+  },
+  "P12": {
+   "type": "Liveness, fair (a frame is always being collected or a result is pending)",
+   "ctl": "AG AF (top._state = 0ub3_010 | top._state = 0ub3_101)",
+   "fairness": true,
+   "result": true
+  }
+ },
+ "mutants": {
+  "B1 apply even if the next frame has started": {
+   "P3": [
+    "INIT in={}",
+    "INIT in={cdone}",
+    "ARM in={en,sof}",
+    "COLLECT in={en,eof}",
+    "SWEEP in={odone}",
+    "CLEAR in={en,cdone,px}"
+   ],
+   "P6": [
+    "INIT in={}"
+   ]
+  },
+  "B2 CLEAR waits for odone as well (stuck)": {
+   "P10": [
+    "INIT in={}",
+    "INIT in={cdone}",
+    "ARM in={en,sof}",
+    "COLLECT in={en,eof}",
+    "SWEEP in={}",
+    "SWEEP in={en,sof}",
+    "SWEEP in={eof}",
+    "SWEEP in={cdone}",
+    "SWEEP in={odone}",
+    "[loop] SWEEP in={odone}",
+    "CLEAR in={cdone}",
+    "CLEAR in={en,sof,cdone}",
+    "CLEAR in={eof,cdone}",
+    "CLEAR in={odone}",
+    "CLEAR in={cdone}"
+   ],
+   "P12": [
+    "INIT in={}",
+    "INIT in={cdone}",
+    "ARM in={en,sof}",
+    "COLLECT in={en,eof}",
+    "SWEEP in={}",
+    "SWEEP in={en,sof}",
+    "SWEEP in={eof}",
+    "SWEEP in={cdone}",
+    "SWEEP in={odone}",
+    "[loop] SWEEP in={odone}",
+    "CLEAR in={cdone}",
+    "CLEAR in={en,sof,cdone}",
+    "CLEAR in={eof,cdone}",
+    "CLEAR in={odone}",
+    "CLEAR in={cdone}"
+   ]
+  }
+ },
+ "deadlock_free": true,
+ "replay": {
+  "B1": [
+   "ERROR thresholds changed inside frame 1 at (5,5)",
+   "ERROR thresholds changed inside frame 1 at (6,5)",
+   "ERROR thresholds changed inside frame 1 at (7,5)"
+  ],
+  "B2": [
+   "CLASS MISMATCH (24,4) dut=1 paper=2",
+   "CLASS MISMATCH (24,5) dut=1 paper=2",
+   "CLASS MISMATCH (25,5) dut=1 paper=2"
+  ]
+ }
+}

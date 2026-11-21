@@ -13,7 +13,7 @@
 // The classified frame of edge_pipeline has a 3-pixel zero border; the whole-frame engine counts those
 // pixels in bin 0, so BORDER zeros are added to bin 0 / the pixel count when the sweep reads the histogram.
 //
-// Control FSM (minimised STG, see logic/fsm_otsu.py):
+// Control FSM: rtl/otsu_ctrl.sv (minimised STG, see logic/fsm_otsu.py):
 //   INIT    clear both histogram banks (256 clocks); counting off            -> ARM
 //   ARM     wait for the first pixel of a frame (a histogram must start with a frame) -> COLLECT on sof
 //   COLLECT histogram of the current frame                                   -> SWEEP on eof (swap banks)
@@ -42,8 +42,12 @@ module otsu_stream #(
   output logic        overrun,
   output logic [2:0]  state_o
 );
-  typedef enum logic [2:0] {S_INIT = 3'd0, S_ARM = 3'd1, S_COLLECT = 3'd2, S_SWEEP = 3'd3, S_CLEAR = 3'd4, S_PEND = 3'd5} state_t;
-  (* fsm_encoding = "auto" *) state_t state;
+  // ---------------- controller (FSM) ----------------
+  logic [2:0] state;
+  logic count_en, clr_both, clr_one, swap, apply, init_done, sweeping;
+  logic otsu_done, px_seen, clr_done_w;
+  otsu_ctrl u_ctrl (.clk, .rst, .en, .sof(nms_sof), .eof(nms_eof), .odone(otsu_done), .cdone(clr_done_w),
+                    .px(px_seen || nms_valid), .ovr(overrun), .state, .count_en, .clr_both, .clr_one, .swap, .apply, .init_done, .sweeping);
   assign state_o = state;
 
   // ---------------- histogram banks (simple dual port BRAM each) ----------------
@@ -65,8 +69,6 @@ module otsu_stream #(
   logic acc_bank;                       // bank being accumulated; the other one is swept / cleared
   logic [7:0] sat;
   assign sat = (nms_mag > 11'd255) ? 8'hFF : nms_mag[7:0];
-  wire count_en = (state == S_COLLECT) || (state == S_SWEEP) || (state == S_CLEAR) || (state == S_PEND) ||
-                  ((state == S_ARM) && en && nms_sof);
 
   // accumulate pipeline: stage 1 = BRAM read, stage 2 = +1 and write back, with one forwarding register
   logic v1, bank1; logic [7:0] b1, s1;
@@ -79,13 +81,12 @@ module otsu_stream #(
   logic [31:0] sum0, sum1;
 
   // sweep (Otsu) and clear
-  logic otsu_start, otsu_busy, otsu_done;
+  logic otsu_start, otsu_busy;
   logic [7:0] o_raddr, o_raddr_q;
   logic [31:0] o_rdata, tot_cnt, tot_sum;
   logic [7:0] t_hi_o, t_lo_o;
-  logic [8:0] clr_k;
-  wire clr_done = clr_k[8];
-  logic px_seen;                        // a pixel of the frame after the swept one has been classified
+  logic [8:0] clr_k;                    // clear-pass counter; bit 8 = pass finished
+  assign clr_done_w = clr_k[8];
 
   always_comb begin
     // bank 0 ports
@@ -93,7 +94,7 @@ module otsu_stream #(
     ra1 = acc_bank ? sat : o_raddr;
     we0 = 1'b0; wa0 = '0; wd0 = '0;
     we1 = 1'b0; wa1 = '0; wd1 = '0;
-    if (state == S_INIT) begin                         // clear both banks
+    if (clr_both) begin                                // clear both banks (INIT)
       we0 = 1'b1; wa0 = clr_k[7:0];
       we1 = 1'b1; wa1 = clr_k[7:0];
     end else begin
@@ -101,7 +102,7 @@ module otsu_stream #(
         if (bank1) begin we1 = 1'b1; wa1 = b1; wd1 = inc; end
         else       begin we0 = 1'b1; wa0 = b1; wd0 = inc; end
       end
-      if (state == S_CLEAR) begin                      // clear the swept bank (never the accumulate bank)
+      if (clr_one) begin                               // clear the swept bank (never the accumulate bank)
         if (acc_bank) begin we0 = 1'b1; wa0 = clr_k[7:0]; wd0 = '0; end
         else          begin we1 = 1'b1; wa1 = clr_k[7:0]; wd1 = '0; end
       end
@@ -125,14 +126,13 @@ module otsu_stream #(
   always_ff @(posedge clk) begin
     o_raddr_q <= o_raddr;
     if (rst) begin
-      state <= S_INIT; clr_k <= '0; acc_bank <= 1'b0;
+      clr_k <= '0; acc_bank <= 1'b0;
       v1 <= 1'b0; wv_valid <= 1'b0; otsu_start <= 1'b0;
       cnt0 <= '0; cnt1 <= '0; sum0 <= '0; sum1 <= '0;
       px_seen <= 1'b0; overrun <= 1'b0; adapt_valid <= 1'b0;
       thr_lo_a <= '0; thr_hi_a <= '0;
       b1 <= '0; bank1 <= 1'b0; wb <= '0; wv <= '0; wbank <= 1'b0; s1 <= '0;
     end else begin
-      otsu_start <= 1'b0;
       // stage 1
       v1 <= nms_valid && count_en; b1 <= sat; s1 <= sat; bank1 <= acc_bank;
       // stage 2: write-back is combinational above; remember it for forwarding and update the bank totals
@@ -141,45 +141,19 @@ module otsu_stream #(
         if (bank1) begin cnt1 <= cnt1 + 1'b1; sum1 <= sum1 + 32'(s1); end
         else       begin cnt0 <= cnt0 + 1'b1; sum0 <= sum0 + 32'(s1); end
       end
-      if (nms_valid && (state == S_SWEEP || state == S_CLEAR)) px_seen <= 1'b1;
-      if ((state == S_SWEEP || state == S_CLEAR) && nms_eof) overrun <= 1'b1;
-
-      unique case (state)
-        S_INIT: begin
-          clr_k <= clr_k + 1'b1;
-          if (clr_done) begin
-            clr_k <= '0; cnt0 <= '0; cnt1 <= '0; sum0 <= '0; sum1 <= '0; overrun <= 1'b0; adapt_valid <= 1'b0;
-            state <= S_ARM;
-          end
-        end
-        S_ARM: if (en && nms_sof) state <= S_COLLECT;
-        S_COLLECT: begin
-          if (!en) state <= S_INIT;
-          else if (nms_eof) begin
-            acc_bank <= ~acc_bank; otsu_start <= 1'b1; px_seen <= 1'b0; state <= S_SWEEP;
-          end
-        end
-        S_SWEEP: if (otsu_done) begin clr_k <= '0; state <= S_CLEAR; end
-        S_CLEAR: begin
-          clr_k <= clr_k + 1'b1;
-          if (clr_done) begin
-            clr_k <= '0;
-            if (acc_bank) begin cnt0 <= '0; sum0 <= '0; end else begin cnt1 <= '0; sum1 <= '0; end
-            if (overrun || !en) state <= S_INIT;
-            else if (!px_seen && !nms_valid) begin         // still in blanking: apply to the coming frame
-              thr_hi_a <= 11'(t_hi_o); thr_lo_a <= 11'(t_lo_o); adapt_valid <= 1'b1; state <= S_COLLECT;
-            end else state <= S_PEND;
-          end
-        end
-        S_PEND: begin
-          if (!en) state <= S_INIT;
-          else if (nms_eof) begin                          // frame boundary: apply, then sweep the frame just ended
-            thr_hi_a <= 11'(t_hi_o); thr_lo_a <= 11'(t_lo_o); adapt_valid <= 1'b1;
-            acc_bank <= ~acc_bank; otsu_start <= 1'b1; px_seen <= 1'b0; state <= S_SWEEP;
-          end
-        end
-        default: state <= S_INIT;
-      endcase
+      // clear pass counter (INIT: both banks, CLEAR: swept bank)
+      clr_k <= ((clr_both || clr_one) && !clr_done_w) ? clr_k + 1'b1 : '0;
+      if (clr_one && clr_done_w) begin
+        if (acc_bank) begin cnt0 <= '0; sum0 <= '0; end else begin cnt1 <= '0; sum1 <= '0; end
+      end
+      // flags seen by the controller
+      if (nms_valid && sweeping) px_seen <= 1'b1;
+      if (sweeping && nms_eof) overrun <= 1'b1;
+      // controller commands
+      otsu_start <= swap;
+      if (swap) begin acc_bank <= ~acc_bank; px_seen <= 1'b0; end
+      if (apply) begin thr_hi_a <= 11'(t_hi_o); thr_lo_a <= 11'(t_lo_o); adapt_valid <= 1'b1; end
+      if (init_done) begin cnt0 <= '0; cnt1 <= '0; sum0 <= '0; sum1 <= '0; overrun <= 1'b0; adapt_valid <= 1'b0; end
     end
   end
 

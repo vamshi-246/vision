@@ -1,0 +1,274 @@
+{
+ "fsm": {
+  "spec_states": [
+   "INIT",
+   "ARM",
+   "COLLECT",
+   "SWEEP",
+   "CLEAR",
+   "PEND",
+   "RECOVER"
+  ],
+  "equivalent_pairs": [
+   [
+    "INIT",
+    "RECOVER"
+   ]
+  ],
+  "passes": 1,
+  "chart_pass0": {
+   "INIT|ARM": "X",
+   "INIT|COLLECT": "X",
+   "INIT|SWEEP": "X",
+   "INIT|CLEAR": "X",
+   "INIT|PEND": "X",
+   "INIT|RECOVER": [
+    [
+     "INIT",
+     "RECOVER"
+    ]
+   ],
+   "ARM|COLLECT": "X",
+   "ARM|SWEEP": "X",
+   "ARM|CLEAR": "X",
+   "ARM|PEND": "X",
+   "ARM|RECOVER": "X",
+   "COLLECT|SWEEP": "X",
+   "COLLECT|CLEAR": "X",
+   "COLLECT|PEND": "X",
+   "COLLECT|RECOVER": "X",
+   "SWEEP|CLEAR": "X",
+   "SWEEP|PEND": "X",
+   "SWEEP|RECOVER": "X",
+   "CLEAR|PEND": "X",
+   "CLEAR|RECOVER": "X",
+   "PEND|RECOVER": "X"
+  },
+  "chart_final": {
+   "INIT|ARM": "X",
+   "INIT|COLLECT": "X",
+   "INIT|SWEEP": "X",
+   "INIT|CLEAR": "X",
+   "INIT|PEND": "X",
+   "INIT|RECOVER": "=",
+   "ARM|COLLECT": "X",
+   "ARM|SWEEP": "X",
+   "ARM|CLEAR": "X",
+   "ARM|PEND": "X",
+   "ARM|RECOVER": "X",
+   "COLLECT|SWEEP": "X",
+   "COLLECT|CLEAR": "X",
+   "COLLECT|PEND": "X",
+   "COLLECT|RECOVER": "X",
+   "SWEEP|CLEAR": "X",
+   "SWEEP|PEND": "X",
+   "SWEEP|RECOVER": "X",
+   "CLEAR|PEND": "X",
+   "CLEAR|RECOVER": "X",
+   "PEND|RECOVER": "X"
+  },
+  "minimised_states": [
+   "INIT",
+   "ARM",
+   "COLLECT",
+   "SWEEP",
+   "CLEAR",
+   "PEND"
+  ],
+  "minimised_equivalent_pairs": [],
+  "weights": {
+   "INIT-ARM": 3,
+   "INIT-COLLECT": 4,
+   "INIT-SWEEP": 2,
+   "INIT-CLEAR": 1,
+   "INIT-PEND": 4,
+   "ARM-COLLECT": 3,
+   "ARM-SWEEP": 0,
+   "ARM-CLEAR": 2,
+   "ARM-PEND": 0,
+   "COLLECT-SWEEP": 4,
+   "COLLECT-CLEAR": 3,
+   "COLLECT-PEND": 4,
+   "SWEEP-CLEAR": 3,
+   "SWEEP-PEND": 4,
+   "CLEAR-PEND": 3
+  },
+  "heuristic_codes": {
+   "INIT": "000",
+   "ARM": "001",
+   "COLLECT": "011",
+   "SWEEP": "110",
+   "CLEAR": "111",
+   "PEND": "010"
+  },
+  "heuristic_cost": 57,
+  "binary_cost": 72
+ },
+ "two_level": {
+  "dir1": {
+   "inputs": 4,
+   "on_minterms": 6,
+   "dc_minterms": 3,
+   "canonical_terms": 6,
+   "canonical_literals": 24,
+   "qm_column_sizes": [
+    9,
+    11,
+    3
+   ],
+   "primes": 5,
+   "ucp": {
+    "rows": 6,
+    "cols": 5,
+    "nodes": 1,
+    "cyclic_core_rows": 0,
+    "cyclic_core_cols": 1,
+    "essentials": 3
+   },
+   "qm_ucp_terms": 3,
+   "qm_ucp_literals": 8,
+   "qm_ucp_cover": [
+    "~c0&~sx&sy",
+    "~c0&sx&~sy",
+    "~c0&c2"
+   ],
+   "espresso_terms": 3,
+   "espresso_literals": 8,
+   "espresso_exact_terms": 3,
+   "espresso_exact_literals": 8
+  },
+  "dir0": {
+   "inputs": 4,
+   "on_minterms": 4,
+   "dc_minterms": 3,
+   "canonical_terms": 4,
+   "canonical_literals": 16,
+   "qm_column_sizes": [
+    7,
+    6,
+    1
+   ],
+   "primes": 3,
+   "ucp": {
+    "rows": 4,
+    "cols": 3,
+    "nodes": 1,
+    "cyclic_core_rows": 0,
+    "cyclic_core_cols": 1,
+    "essentials": 1
+   },
+   "qm_ucp_terms": 1,
+   "qm_ucp_literals": 2,
+   "qm_ucp_cover": [
+    "~c0&~c2"
+   ],
+   "espresso_terms": 1,
+   "espresso_literals": 2,
+   "espresso_exact_terms": 1,
+   "espresso_exact_literals": 2
+  },
+  "keep": {
+   "inputs": 12,
+   "on_minterms": 832,
+   "dc_minterms": 768,
+   "canonical_terms": 832,
+   "canonical_literals": 9984,
+   "qm_column_sizes": [
+    1600,
+    7376,
+    14896,
+    17396,
+    13025,
+    6503,
+    2160,
+    458,
+    56,
+    3
+   ],
+   "primes": 27,
+   "ucp": {
+    "rows": 832,
+    "cols": 27,
+    "nodes": 1,
+    "cyclic_core_rows": 0,
+    "cyclic_core_cols": 1,
+    "essentials": 6
+   },
+   "qm_ucp_terms": 6,
+   "qm_ucp_literals": 31,
+   "qm_ucp_cover": [
+    "~c0&~c2&~sx&~sy&geNW&gtSE",
+    "~c0&~c2&~sx&sy&geNE&gtSW",
+    "~c0&~c2&sx&~sy&geNE&gtSW",
+    "~c0&~c2&sx&sy&geNW&gtSE",
+    "~c0&c2&geN&gtS",
+    "c0&geW&gtE"
+   ],
+   "espresso_terms": 6,
+   "espresso_literals": 31,
+   "espresso_exact_terms": 6,
+   "espresso_exact_literals": 31
+  }
+ },
+ "multilevel": {
+  "sop_literals": 31,
+  "kernels": 9,
+  "kernel_list": [
+   {
+    "cokernel": "1",
+    "kernel": "geNW&gtSE&~c0&~c2&~sx&~sy + geNE&gtSW&sy&~c0&~c2&~sx + geNE&gtSW&sx&~c0&~c2&~sy + geNW&gtSE&sx&sy&~c0&~c2 + c2&geN&gtS&~c0 + c0&geW&gtE"
+   },
+   {
+    "cokernel": "geNE&gtSW&~c0&~c2",
+    "kernel": "sy&~sx + sx&~sy"
+   },
+   {
+    "cokernel": "geNW&gtSE&~c0&~c2",
+    "kernel": "~sx&~sy + sx&sy"
+   },
+   {
+    "cokernel": "sx&~c0&~c2",
+    "kernel": "geNE&gtSW&~sy + geNW&gtSE&sy"
+   },
+   {
+    "cokernel": "sy&~c0&~c2",
+    "kernel": "geNE&gtSW&~sx + geNW&gtSE&sx"
+   },
+   {
+    "cokernel": "~c0",
+    "kernel": "geNW&gtSE&~c2&~sx&~sy + geNE&gtSW&sy&~c2&~sx + geNE&gtSW&sx&~c2&~sy + geNW&gtSE&sx&sy&~c2 + c2&geN&gtS"
+   },
+   {
+    "cokernel": "~c0&~c2",
+    "kernel": "geNW&gtSE&~sx&~sy + geNE&gtSW&sy&~sx + geNE&gtSW&sx&~sy + geNW&gtSE&sx&sy"
+   },
+   {
+    "cokernel": "~c0&~c2&~sx",
+    "kernel": "geNW&gtSE&~sy + geNE&gtSW&sy"
+   },
+   {
+    "cokernel": "~c0&~c2&~sy",
+    "kernel": "geNW&gtSE&~sx + geNE&gtSW&sx"
+   }
+  ],
+  "factored": "keep = ~c0&~c2&( (sx~^sy)&geNW&gtSE + (sx^sy)&geNE&gtSW ) + c0&geW&gtE + ~c0&c2&geN&gtS",
+  "factored_literals": 21
+ },
+ "abc": {
+  "aig_and_not": {
+   "$_AND_": 19,
+   "$_NOT_": 20
+  },
+  "gates_and_or_xor_mux": {
+   "$_AND_": 4,
+   "$_MUX_": 3,
+   "$_XNOR_": 1
+  },
+  "lut6": {
+   "$lut": 3
+  },
+  "lut4": {
+   "$lut": 5
+  }
+ }
+}

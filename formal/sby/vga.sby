@@ -1,0 +1,21 @@
+[tasks]
+bmc
+prove
+
+[options]
+bmc: mode bmc
+bmc: depth 30
+prove: mode prove
+prove: depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+read -formal vga_timing.sv
+read -formal props_vga.sv
+prep -top props_vga
+
+[files]
+../../rtl/vga_timing.sv
+props_vga.sv

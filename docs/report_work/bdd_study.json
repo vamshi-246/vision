@@ -1,0 +1,83 @@
+{
+ "ordering_comparator_c0": {
+  "interleaved, MSB first": 554,
+  "interleaved, LSB first": 403,
+  "blocked (all |Gx| bits, then |Gy|)": 4085,
+  "blocked, after sifting": 235,
+  "sifted order": [
+   "ax10",
+   "ax9",
+   "ay9",
+   "ay8",
+   "ay7",
+   "ax8",
+   "ax7",
+   "ay6",
+   "ay5",
+   "ay3",
+   "ay4",
+   "ax6",
+   "ay1",
+   "ax5",
+   "ay0",
+   "ay2",
+   "ax2",
+   "ax0",
+   "ax1",
+   "ax3",
+   "ax4",
+   "ay10"
+  ]
+ },
+ "nms_select": {
+  "sector bits first": {
+   "spec_nodes": 17,
+   "qm_nodes": 14
+  },
+  "equivalence": {
+   "qm_vs_spec (care set)": true,
+   "espresso_vs_spec (care set)": true,
+   "rtl_abc_vs_spec (care set)": true,
+   "rtl_abc_vs_qm (everywhere)": true,
+   "rtl_abc_vs_espresso (everywhere)": true,
+   "rtl_nodes": 14,
+   "espresso_nodes": 14
+  },
+  "after sifting": {
+   "qm_nodes": 14,
+   "order": [
+    "c0",
+    "c2",
+    "sy",
+    "sx",
+    "geW",
+    "gtE",
+    "gtS",
+    "geNW",
+    "gtSE",
+    "geN",
+    "gtSW",
+    "geNE"
+   ]
+  },
+  "comparator bits first": {
+   "spec_nodes": 53,
+   "qm_nodes": 43
+  }
+ },
+ "reachability": {
+  "state_bits": 3,
+  "reachable_states": 6,
+  "codes": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "image_iterations": 6,
+  "T_nodes": 137
+ },
+ "nusmv_reachable": "6"
+}

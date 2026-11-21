@@ -1,0 +1,21 @@
+[tasks]
+bmc
+prove
+
+[options]
+bmc: mode bmc
+bmc: depth 30
+prove: mode prove
+prove: depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+read -formal otsu_ctrl.sv
+read -formal props_otsu_ctrl.sv
+prep -top props_otsu_ctrl
+
+[files]
+../../rtl/otsu_ctrl.sv
+props_otsu_ctrl.sv
