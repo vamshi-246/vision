@@ -13,6 +13,14 @@ if {$live} {
  lappend defines LIVE_RX=1
  set out [file join $root build hdmi_z7_live]
 }
+# P7_ILA=1 (Zybo Z7 still-image design): add an Integrated Logic Analyzer on the pixel clock (core input, Sobel, core output,
+# thresholds, running edge count). Output build/hdmi_z7_ila/ (bitstream + probes .ltx). Capture: scripts/ila_capture.tcl
+set ila [info exists ::env(P7_ILA)]
+if {$ila} {
+ if {$board ne "zybo_z7" || $live} {error "P7_ILA is for the Zybo Z7 still-image build (P7_BOARD=zybo_z7, no P7_LIVE)"}
+ lappend defines P7_ILA=1
+ set out [file join $root build hdmi_z7_ila]
+}
 file mkdir $out
 set_param general.maxThreads 1
 create_project -force hdmi [file join $out project] -part xc7z010clg400-1
@@ -59,6 +67,7 @@ set_clock_uncertainty 0.100 [all_clocks]
 write_checkpoint -force [file join $out synth.dcp]
 report_utilization -file [file join $out utilization_synth.rpt]
 report_clocks -file [file join $out clocks.rpt]
+if {$ila} {source [file join $root scripts ila_insert.tcl]}
 set pixel_period [get_property PERIOD [get_clocks clk_out1_video_clocks*]]
 set serial_period [get_property PERIOD [get_clocks clk_out2_video_clocks*]]
 if {abs($pixel_period/$serial_period-5.0)>0.01} {error "Pixel/serial clocks must have a 5:1 period ratio"}
@@ -81,3 +90,4 @@ foreach dt {max min} {if {[get_property SLACK [get_timing_paths -delay_type $dt 
 # The PHY supplies the 125 MHz PL reference clock and must not be held reset.
 set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup [current_design]
 write_bitstream -force [file join $out zybo_edge_hdmi.bit]
+if {$ila} {write_debug_probes -force [file join $out zybo_edge_hdmi.ltx]}

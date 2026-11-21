@@ -94,7 +94,7 @@ clean:
 	@echo "Generated outputs are ignored by Git; remove only named generated directories manually."
 
 
-.PHONY: hdmi hdmi-sim hdmi-timing
+.PHONY: hdmi hdmi-sim hdmi-timing ila
 hdmi:
 	mkdir -p build
 	$(VIVADO) -mode batch -source scripts/build_hdmi.tcl -log build/hdmi_build.log -journal build/hdmi_build.jou
@@ -102,6 +102,10 @@ hdmi:
 live:
 	mkdir -p build
 	P7_BOARD=zybo_z7 P7_LIVE=1 $(VIVADO) -mode batch -source scripts/build_hdmi.tcl -log build/live_build.log -journal build/live_build.jou
+
+ila:
+	mkdir -p build
+	P7_BOARD=zybo_z7 P7_ILA=1 $(VIVADO) -mode batch -source scripts/build_hdmi.tcl -log build/ila_build.log -journal build/ila_build.jou
 
 live-sim:
 	mkdir -p build/sim_rx_live

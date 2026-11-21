@@ -1,4 +1,12 @@
 `default_nettype none
+// P7_ILA (ILA debug build only, `make ila`): mark the nets below for the Vivado ILA; empty in every other build.
+`ifndef P7_DBG
+`ifdef P7_ILA
+`define P7_DBG (* mark_debug = "true" *)
+`else
+`define P7_DBG
+`endif
+`endif
 // Full raster alignment for the fixed-rate, no-backpressure 3x3 core.
 module edge_video #(parameter integer W=640,H=480)(
  input wire clk,rst,input wire [3:0] switches,
@@ -25,7 +33,7 @@ module edge_video #(parameter integer W=640,H=480)(
  // signal that reaches the core is delayed by the same two cycles, so the
  // pattern and image sources share one fixed pixel/raster relationship.
  always_ff @(posedge clk) img_addr<=17'(sy0[9:1]*(W/2))+17'(sx0[9:1]);
- logic [9:0] sx1,sy1,sx,sy;logic sde1,shs1,svs1,sof1,eol1,sde,shs,svs,sof,eol;
+ logic [9:0] sx1,sy1,sx,sy;logic sde1,shs1,svs1,sof1,eol1,shs,svs;`P7_DBG logic sde,sof,eol;
  always_ff @(posedge clk) begin
   {sx1,sy1,sde1,shs1,svs1,sof1,eol1}<={sx0,sy0,sde0,shs0,svs0,sof0,eol0};
   {sx,sy,sde,shs,svs,sof,eol}<={sx1,sy1,sde1,shs1,svs1,sof1,eol1};
@@ -34,10 +42,10 @@ module edge_video #(parameter integer W=640,H=480)(
  always_ff @(posedge clk) if(rst) use_img_q<=0; else if(sof) use_img_q<=use_image;
  wire [7:0] pattern = ((sx>=W/4 && sx<W*3/4 && sy>=H/4 && sy<H*3/4) ? 8'd220 :
                     ((sx[5]^sy[5]) ? 8'd160 : 8'd24));
- wire [7:0] gray = use_img_q ? (sde ? img_data : 8'd0) : pattern;
+ `P7_DBG wire [7:0] gray = use_img_q ? (sde ? img_data : 8'd0) : pattern;
  (* ASYNC_REG="TRUE" *) logic [3:0] sw_meta,sw_sync;
  logic [3:0] settings=4'b0010;
- logic [10:0] lo,hi;
+ `P7_DBG logic [10:0] lo,hi;
  assign settings_o=settings;
  always_ff @(posedge clk) begin
   sw_meta<=switches;sw_sync<=sw_meta;
@@ -56,8 +64,8 @@ module edge_video #(parameter integer W=640,H=480)(
   if(ext_q) begin lo=ext_lo_q;hi=ext_hi_q;end
  end
  assign thr_used={hi,lo};
- wire cv,cs,ce,gv;wire [7:0] gray_smooth;wire [1:0] cls;
- wire [$clog2(W)-1:0] cx;wire [$clog2(H)-1:0] cy;
+ `P7_DBG wire cv,cs,ce;wire gv;wire [7:0] gray_smooth;`P7_DBG wire [1:0] cls;
+ `P7_DBG wire [$clog2(W)-1:0] cx;`P7_DBG wire [$clog2(H)-1:0] cy;
  edge_pipeline #(.IMG_W(W),.IMG_H(H)) core(.clk,.rst,.in_valid(sde),.in_sof(sof),.in_eol(eol),
  .in_gray(gray),.thr_lo(lo),.thr_hi(hi),.clear_hist(clear_hist),.hist_rd_addr(hist_rd_addr),
  .hist_rd_data(hist_rd_data),.hist_nnz(hist_nnz),.hist_valid(hist_valid),.out_valid(cv),.out_sof(cs),.out_eol(ce),
@@ -81,7 +89,7 @@ module edge_video #(parameter integer W=640,H=480)(
  assign vsync=ready_video ? delayed[29]:1'b1;
  wire interior=de && x>=3 && x<W-3 && y>=3 && y<H-3;
  wire smooth_interior=de && x>=1 && x<W-1 && y>=1 && y<H-1;
- logic [19:0] running_edges;
+ `P7_DBG logic [19:0] running_edges;
  always_ff @(posedge clk) begin
   if(rst) begin alignment_error<=0;running_edges<=0;edge_count<=0;frame_pulse<=0;end
   else begin
