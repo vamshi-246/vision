@@ -1,0 +1,591 @@
+<!DOCTYPE html><html><head><meta charset='utf-8'><title>P7 Viva Study Guide</title><style>body{font-family:'Noto Sans',Arial,sans-serif;max-width:880px;margin:2em auto;padding:0 1em;line-height:1.5;color:#222}
+h1{color:#003366;border-bottom:2px solid #003366}h2{color:#003366;border-bottom:1px solid #ccc;margin-top:1.8em}h3{color:#224}
+table{border-collapse:collapse;margin:.8em 0;font-size:.93em}th,td{border:1px solid #bbb;padding:4px 8px;text-align:left}th{background:#e8f0fc}
+code{background:#f3f3f3;padding:1px 4px;border-radius:3px}pre{background:#f6f8fa;padding:10px;overflow-x:auto;font-size:.85em}
+blockquote{border-left:4px solid #003366;margin:1em 0;padding:.4em 1em;background:#f4f7fb}
+@media print{body{max-width:none;font-size:10.5pt}h2{page-break-after:avoid}table,pre{page-break-inside:avoid}}</style></head><body><h1 id="p7-viva-study-guide-real-time-edge-detection-video-pipeline">P7 Viva Study Guide: Real-Time Edge-Detection Video Pipeline</h1>
+<p><strong>Group 07.</strong> Gundoju Sai Vamshi (B23263), Shashank Tiwari (B24499).
+Report: <code>report/VL401_G07_P07.pdf</code>. Demo steps: <code>docs/DEMO_GUIDE.md</code>.</p>
+<p>Read this guide in order. Each part says <strong>what</strong> a block does, <strong>why</strong> it is built that way, and <strong>how</strong> it works, in plain words. Part 9 lists the questions the professor is most likely to ask, with short answers. Part 10 lists the honest limitations, with how to explain each one.</p>
+<hr />
+<h2 id="1-the-project-in-one-minute">1. The project in one minute</h2>
+<blockquote>
+<p>"We built a hardware edge detector that runs on live video. Every clock cycle one pixel goes in and one classified pixel comes out, at 640×480 and 60 frames per second. The algorithm is Canny-style: blur, gradient, thin the edges, then double threshold. It runs on a Zybo Z7-10 FPGA and shows the result on a monitor over HDMI. Switches select the original, blurred, edge or class view, and the threshold preset. A small RISC-V CPU (PicoRV32) reads statistics through APB registers and sets the thresholds. We designed the Sobel datapath with the course's HLS methods and minimised its decision logic with ESPRESSO and BDDs. We verified everything against a Python golden model, with assertions and coverage, and proved properties with NuSMV (CTL) and SymbiYosys. From a 2023 paper we added an adaptive Otsu threshold in a streaming form. Our version fits on the chip; the paper's version does not."</p>
+</blockquote>
+<hr />
+<h2 id="2-the-big-picture">2. The big picture</h2>
+<pre><code> laptop photo (JTAG)  or  laptop webcam (HDMI-in)
+            │
+            ▼
+   320×240 frame store (BRAM) ──2× upscale──► gray pixel stream, 1 pixel / clock
+            │
+            ▼
+ ┌──────────────────────── edge_pipeline (the &quot;core&quot;) ───────────────────────────┐
+ │ line buffer → Gaussian 3×3 → line buffer → Sobel |Gx|+|Gy| + direction →       │
+ │ line buffer → NMS (thin edges) → double threshold (class 0/1/2) + 64-bin histogram │
+ └────────────────────────────────────────────────────────────────────────────────┘
+            │                                         │ APB registers
+            ▼                                         ▼
+   view mux (SW1:0) + VGA timing 800×525  →  HDMI TX (rgb2dvi) → monitor
+                                     PicoRV32 RISC-V reads EDGE_CNT, histogram; writes THR_HI/LO
+</code></pre>
+<ul>
+<li><strong>Clock.</strong> 25.18 MHz pixel clock from an MMCM. The 640×480@60 standard needs 25.175 MHz. One clock = one pixel. The frame is 800×525 clocks; the extra clocks are blanking.</li>
+<li><strong>Why no frame buffer in the core?</strong> Every stage only needs a 3×3 neighbourhood, so storing 2 lines per stage is enough. This is the <em>line-buffer</em> architecture: 3 BRAM tiles for the whole core instead of megabits for a frame.</li>
+<li><strong>Latency.</strong> About 3 lines (2,415 clocks = 3 lines + 15 clocks at the 800-clock line). Each 3×3 stage needs one line from the future: the row below the centre pixel.</li>
+</ul>
+<hr />
+<h2 id="3-the-core-stage-by-stage">3. The core, stage by stage</h2>
+<h3 id="31-grayscale">3.1 Grayscale</h3>
+<p><code>gray = (77R + 150G + 29B) &gt;&gt; 8</code>. These are the standard luminance weights (0.299, 0.587, 0.114) times 256, so only shifts and adds are needed. (In the still-image build the stored photo is already gray.)</p>
+<h3 id="32-line-buffer-rtllinebufsv-the-heart-of-streaming">3.2 Line buffer (<code>rtl/linebuf.sv</code>). The heart of streaming</h3>
+<ul>
+<li><strong>What:</strong> it turns a stream of single pixels into a stream of 3×3 windows.</li>
+<li><strong>How:</strong></li>
+<li>Two BRAM rows store the previous two lines. A 3×3 register array shifts left every valid clock.</li>
+<li>The two rows are used alternately. When line <em>y</em> arrives, the row being overwritten holds line <em>y−2</em>, which is no longer needed, so no data ever has to be copied.</li>
+<li>Each read is synchronous and <em>read-first</em>: the old value comes out while the new value is written.</li>
+<li><strong>Valid rule:</strong> a window is valid only when its centre is at least one pixel inside the image. That is why each 3×3 stage loses one border pixel, and the final class map has a 3-pixel zero border.</li>
+<li><strong>Coordinates travel with the data.</strong> So if the input has gaps (blanking, a stalled source), nothing goes out of alignment.</li>
+</ul>
+<h3 id="33-gaussian-blur-rtlgausssv">3.3 Gaussian blur (<code>rtl/gauss.sv</code>)</h3>
+<ul>
+<li>Kernel 1-2-1 / 2-4-2 / 1-2-1, total 16, so <code>smooth = (sum + 8) &gt;&gt; 4</code>. The <code>+8</code> rounds to nearest instead of truncating.</li>
+<li>All multiplications are by powers of 2, so they are shifts (wires). There are no multipliers.</li>
+<li><strong>Why blur?</strong> Sobel amplifies noise; blurring first removes small random edges.</li>
+</ul>
+<h3 id="34-sobel-gradient-rtlsobelsv-designed-with-hand-hls">3.4 Sobel gradient (<code>rtl/sobel.sv</code>). Designed with hand HLS</h3>
+<pre><code>Gx = (p02 + 2p12 + p22) − (p00 + 2p10 + p20)      (right column − left column)
+Gy = (p20 + 2p21 + p22) − (p00 + 2p01 + p02)      (bottom row − top row)
+mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
+</code></pre>
+<ul>
+<li><strong>CSE trick:</strong> E1 = p22 − p00 and E2 = p02 − p20 appear in both gradients, so Gx = E1 + E2 + 2F and Gy = E1 − E2 + 2G, with F = p12 − p10 and G = p21 − p01. This needs 8 adders instead of 10.</li>
+<li><strong>Pipeline:</strong> 4 register stages, II = 1 (a new window every clock).</li>
+<li>Stage 0: E1, E2, F, G.</li>
+<li>Stage 1: Gx, Gy.</li>
+<li>Stage 2: absolute values and signs.</li>
+<li>Stage 3: magnitude plus the direction comparators.</li>
+<li><strong>Why |Gx|+|Gy| and not √(Gx²+Gy²)?</strong> A square root needs multipliers and many cycles. The L1 norm is only an add, and it is a standard approximation in hardware Canny.</li>
+</ul>
+<h3 id="35-direction-quantisation-rtldir_decidesv-generated-by-espresso">3.5 Direction quantisation (<code>rtl/dir_decide.sv</code>, generated by ESPRESSO)</h3>
+<ul>
+<li>NMS only needs to know which of 4 directions (0°, 45°, 90°, 135°) the gradient points in.</li>
+<li>The boundary between "horizontal" and "diagonal" is 22.5°, and tan 22.5° ≈ 0.414 ≈ 13/32.</li>
+<li><code>c0 = 32|Gy| ≤ 13|Gx|</code>: the gradient is mostly horizontal, so sector 0.</li>
+<li><code>c2 = 32|Gx| ≤ 13|Gy|</code>: the gradient is mostly vertical, so sector 2.</li>
+<li>Otherwise it is diagonal: sector 1 if Gx and Gy have the same sign, sector 3 if not.</li>
+<li>Multiplying by 13 = <code>(x&lt;&lt;3)+(x&lt;&lt;2)+x</code>; by 32 = <code>x&lt;&lt;5</code>. <strong>0 DSP blocks.</strong></li>
+<li>The 4-input decision (c0, c2, sx, sy → 2-bit dir) was minimised from 10 terms / 40 literals to 4 terms / 10 literals.</li>
+</ul>
+<h3 id="36-non-maximum-suppression-rtldirnmssv">3.6 Non-maximum suppression (<code>rtl/dirnms.sv</code>)</h3>
+<ul>
+<li><strong>What:</strong> it thins thick edges to 1 pixel. A pixel survives only if it is a local maximum <em>across</em> the edge, i.e. along its gradient direction.</li>
+<li><strong>How:</strong></li>
+<li>Pick the two neighbours along the direction: W/E for sector 0, NW/SE for 1, N/S for 2, NE/SW for 3.</li>
+<li>Keep the pixel if <code>m &gt; 0 &amp;&amp; m ≥ earlier &amp;&amp; m &gt; later</code>. "Earlier" and "later" are in raster (scan) order.</li>
+<li><strong>Why ≥ on one side and &gt; on the other?</strong> On a flat plateau of equal values, strict <code>&gt;</code> on both sides would delete every pixel, and <code>≥</code> on both would keep them all. The asymmetric rule keeps exactly one.</li>
+</ul>
+<h3 id="37-double-threshold-histogram-rtlclassify_histsv">3.7 Double threshold + histogram (<code>rtl/classify_hist.sv</code>)</h3>
+<ul>
+<li><code>class = 2 (strong) if m ≥ T_hi; 1 (weak) if m ≥ T_lo; 0 otherwise</code> (and always 0 if m = 0).</li>
+<li><strong>Histogram:</strong></li>
+<li>64 bins of the non-zero NMS values; the bin is <code>m[10:5]</code>, so each bin is 32 levels wide.</li>
+<li>Two banks, <em>ping-pong</em>: one counts the current frame, while the finished one is the readable snapshot. They swap at the end of each frame.</li>
+<li>The CPU reads the bins over APB.</li>
+<li><em>(We did not ship full hysteresis, i.e. "weak becomes strong if connected to strong". The class view shows weak and strong in different colours instead. An optional <code>hyst_stage.sv</code> exists.)</em></li>
+</ul>
+<hr />
+<h2 id="4-video-board-and-soc">4. Video, board and SoC</h2>
+<ul>
+<li><strong><code>vga_timing.sv</code>:</strong></li>
+<li>Two counters: h 0..799 and v 0..524.</li>
+<li><code>de</code> (display enable) is high for h &lt; 640 and v &lt; 480.</li>
+<li>hsync is low for h in 656..751; vsync is low for v in 490..491.</li>
+<li><code>sof</code>, <code>eol</code> and <code>eof</code> mark the frame start, line end and frame end.</li>
+<li><strong>Frame store:</strong></li>
+<li>320×240×8 bit in BRAM. A full 640×480 frame is 2.46 Mb, but the chip only has 2.16 Mb of BRAM.</li>
+<li>It is shown 2× (each stored pixel is used for a 2×2 block).</li>
+<li>The laptop writes it over <strong>JTAG-to-AXI</strong> (<code>scripts/fpga_image.py</code>).</li>
+<li><strong>View mux:</strong> SW1:0 selects 00 original, 01 smoothed, 10 strong edges, 11 classes (colour). The original and smoothed views are delayed by the same 2,415 clocks as the edges, so all views line up.</li>
+<li><strong>HDMI:</strong> Digilent <code>rgb2dvi</code> serialises RGB to TMDS (10 bits per colour per pixel at 5× the clock, DDR). It is DVI-compatible, which is HDMI without audio.</li>
+<li><strong>Live mode (BTN2):</strong></li>
+<li>The laptop shows the webcam full-screen on a second "monitor", which is really the FPGA's HDMI-in port at 800×600.</li>
+<li><code>dvi2rgb</code> receives it. We convert to gray and downscale 2.5:1 to 320×240.</li>
+<li>An <strong>asynchronous FIFO</strong> crosses from the 40 MHz receive clock to the 25.18 MHz pixel clock, and the result is written into the frame store.</li>
+<li>Why 800×600? The receiver IP needs at least 40 MHz to align.</li>
+<li><strong>SoC (<code>rtl/soc</code>):</strong></li>
+<li>PicoRV32 is a small RV32I core (no multiplier), with 8 KB RAM, a mailbox and an <strong>APB3 master</strong>.</li>
+<li>APB has two phases: SETUP (PSEL=1, PENABLE=0), then ACCESS (PENABLE=1, wait for PREADY).</li>
+<li>Once per frame the firmware reads EDGE_CNT and the 64 bins, then writes THR_HI and THR_LO.</li>
+<li>There is no interrupt; it polls FRAME_CNT.</li>
+<li><strong>Register map:</strong> CTRL 0x00, THR_HI 0x04, THR_LO 0x08, STATUS 0x0C (sticky, write-1-to-clear), EDGE_CNT 0x10, FRAME_CNT 0x14, HIST_IDX 0x2C, HIST_DATA 0x30, VERSION 0x34.</li>
+</ul>
+<hr />
+<h2 id="5-what-each-course-unit-looks-like-in-this-project">5. What each course unit looks like in this project</h2>
+<h3 id="unit-1-high-level-representation-cdfg-and-transformations">Unit 1: High-level representation (CDFG) and transformations</h3>
+<p>A <strong>CDFG</strong> is a graph of operations (nodes) and data dependencies (edges). Transformations we applied to Sobel:</p>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Mult</th>
+<th>Add</th>
+<th>Critical path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Original 3×3 convolution (loop, 9 taps per gradient)</td>
+<td>22</td>
+<td>19</td>
+<td>12 steps</td>
+</tr>
+<tr>
+<td>Constant folding + dead-code elimination (×0 removed, ×1 folded)</td>
+<td>8</td>
+<td>13</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Strength reduction (×2, ×32 become shifts; ×13 becomes shift-add)</td>
+<td>0</td>
+<td>17</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Tree-height reduction (balanced add trees instead of a chain)</td>
+<td>0</td>
+<td>17</td>
+<td>7</td>
+</tr>
+<tr>
+<td>CSE (share E1, E2 between Gx and Gy)</td>
+<td>0</td>
+<td>15</td>
+<td>7</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Tree-height reduction:</strong> <code>a+b+c+d</code> done left to right is 3 sequential adds (depth 3); <code>(a+b)+(c+d)</code> is depth 2. It is the same number of adders on a shorter critical path.</li>
+<li><strong>CSE:</strong> compute a common subexpression once and reuse it. It saves adders without changing depth.</li>
+</ul>
+<h3 id="units-23-hls-scheduling-allocation-and-binding">Units 2–3: HLS. Scheduling, allocation and binding</h3>
+<ul>
+<li><strong>ASAP:</strong> schedule each op as early as its inputs allow.</li>
+<li><strong>ALAP:</strong> schedule each op as late as the latency bound allows.</li>
+<li><strong>Mobility</strong> = ALAP − ASAP. Mobility 0 means the op is on the critical path. Here only F, G (mobility 1) and the magnitude add (mobility 2) can move.</li>
+<li><strong>List scheduling</strong> (resource-constrained):</li>
+<li>In each step, from the ready ops, pick the highest priority (longest path to the end) up to the number of units.</li>
+<li>With 2 adders + 1 abs unit: 9 steps. With 1 adder + 1 abs unit: 15 steps.</li>
+<li><strong>ILP</strong> (exact): variables x[op,step] ∈ {0,1}, constraints "each op once", "precedence", "units per step ≤ N"; minimise N.</li>
+<li>It confirmed that 9 steps needs 2 adders and 7 steps needs 3 adders + 2 abs, so list scheduling was optimal here.</li>
+<li>FDS (force-directed scheduling) is the heuristic alternative to ILP for time-constrained scheduling; we used ILP because it is exact for this small graph.</li>
+<li><strong>Left-edge register binding:</strong></li>
+<li>Each value lives from the step it is produced to its last use (an interval).</li>
+<li>Sort the intervals by start and put each one in the first register that is free.</li>
+<li>Result: 4 registers, which equals the maximum number of values alive at the same time, so it is optimal (interval graphs).</li>
+<li><strong>Clique partitioning (FU binding):</strong></li>
+<li>Two ops are <em>compatible</em> if they are in different steps, so they can share a unit.</li>
+<li>Group the compatibility graph into cliques; each clique becomes one adder. We got 2 cliques = 2 adders.</li>
+<li><strong>FSMD:</strong> the controller (a step counter = the FSM) plus the datapath (shared units, multiplexers, registers). Our script <strong>generates the FSMD Verilog</strong> from the schedule and binding; both versions pass 100,000 random windows against the shipped Sobel.</li>
+<li><strong>Key surprise (be ready to explain it):</strong> the FSMD with <em>fewer operators</em> uses <strong>more LUTs</strong> (358 and 256) than the pipelined version (141). There are two reasons:</li>
+<li>A shared unit must be as wide as its widest job: 16 bits for the comparators, against 9–11 bits for most adds.</li>
+<li>Every shared input needs a multiplexer, and on an FPGA a multiplexer costs about the same LUTs as the small adder it saves.
+  Sharing only pays for expensive units such as multipliers. The pipeline is also the only design that meets 1 pixel per clock.</li>
+<li><strong>Operator library:</strong> we measured each operator on the actual chip (e.g. an 11-bit add is 11 LUTs, 2.3 ns). At the 39.7 ns pixel clock, several operators fit in one clock. The shipped Sobel uses this <em>chaining</em> to pack 17 ops into 4 stages.</li>
+</ul>
+<h3 id="unit-3-logic-optimisation-and-fsms">Unit 3: Logic optimisation and FSMs</h3>
+<ul>
+<li><strong>FSM studied:</strong> the controller of the adaptive-threshold unit (<code>rtl/otsu_ctrl.sv</code>). It has 6 states: INIT, ARM, COLLECT, SWEEP, CLEAR, PEND.</li>
+<li><strong>State minimisation (implication chart):</strong></li>
+<li>Make a table of all state pairs. Cross out (X) any pair whose outputs differ for some input.</li>
+<li>For each remaining pair, list the next-state pairs it implies. Repeat: cross out a pair if any pair it implies is crossed out.</li>
+<li>Pairs never crossed out are equivalent.</li>
+<li>Our specification had 7 states, with RECOVER (after an overrun or disable) separate from INIT (after reset). The chart showed <strong>INIT ≡ RECOVER</strong> (same outputs, same next states), so 7 → 6 states.</li>
+<li><strong>State encoding:</strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Encoding</th>
+<th>Bits</th>
+<th>LUT</th>
+<th>FF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>binary</td>
+<td>3</td>
+<td>16</td>
+<td>17</td>
+</tr>
+<tr>
+<td>gray</td>
+<td>3</td>
+<td>17</td>
+<td>17</td>
+</tr>
+<tr>
+<td>Johnson</td>
+<td>3</td>
+<td>16</td>
+<td>17</td>
+</tr>
+<tr>
+<td>one-hot</td>
+<td>6</td>
+<td><strong>12</strong></td>
+<td>20</td>
+</tr>
+<tr>
+<td>our heuristic</td>
+<td>3</td>
+<td>15</td>
+<td>17</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>One-hot uses the fewest LUTs: each next-state bit depends on few bits, which suits 6-input LUTs. The cost is more flip-flops.</li>
+<li>Heuristic: give "related" states (common next state, common previous state, same outputs) codes that differ in 1 bit; we searched all code assignments for the minimum weighted Hamming distance.</li>
+<li><strong>Two-level minimisation:</strong></li>
+<li><em>Quine–McCluskey:</em><ol>
+<li>Combine minterms that differ in one bit, repeatedly, to get all <strong>prime implicants</strong>.</li>
+<li>Solve the <strong>unate covering problem (UCP)</strong>: choose the fewest primes that cover all on-set minterms.</li>
+</ol>
+</li>
+<li><em>UCP tricks:</em><ul>
+<li>An <strong>essential prime</strong> (the only cover of some minterm) must be taken.</li>
+<li><strong>Row dominance:</strong> drop a minterm row that is covered whenever another row is.</li>
+<li><strong>Column dominance:</strong> drop a prime that covers a subset of another's minterms.</li>
+<li>What remains is the cyclic core; solve it by <strong>branch and bound</strong>.</li>
+</ul>
+</li>
+<li><em>ESPRESSO:</em> heuristic EXPAND–IRREDUNDANT–REDUCE loops; <code>-Dexact</code> gives the guaranteed minimum.</li>
+<li><em>Our result:</em> for the 12-input NMS keep function, QM gave 27 primes and a 6-term / 31-literal cover. ESPRESSO heuristic and exact agree. The cyclic core was empty: essentials + dominance solved it.</li>
+<li><em>Don't-cares:</em> c0 = c2 = 1 only happens when Gx = Gy = 0 (signs 0), so the other combinations are don't-cares.</li>
+<li><strong>Multilevel (kernels):</strong></li>
+<li>A <strong>kernel</strong> is a cube-free quotient of the expression divided by a cube; that cube is the <strong>co-kernel</strong>. Common kernels can be factored out.</li>
+<li>Our kernel <code>sx·sy' + sx'·sy</code> is an XOR. Factoring gives "decode the sector, then select the pair": 17 literals instead of 31.</li>
+<li>Yosys+ABC on the RTL: 3 LUT6, or 8 gates with MUX/XOR.</li>
+</ul>
+<h3 id="units-45-temporal-logic-ctl-and-model-checking">Units 4–5: Temporal logic (CTL) and model checking</h3>
+<ul>
+<li><strong>Kripke structure</strong> M = (S, R, L): states, a transition relation, and a labelling with atomic propositions.</li>
+<li><strong>CTL</strong> = path quantifier (A = all paths, E = some path) + temporal operator (X next, F eventually, G always, U until).</li>
+<li><code>AG p</code> means p is always true on every path (safety).</li>
+<li><code>AG (req → AF ack)</code> means every request is eventually answered (liveness).</li>
+<li><code>AG EF init</code> means from anywhere you can always get back to init (no deadlock, resettable).</li>
+<li><strong>Labelling algorithm:</strong></li>
+<li><code>EF p</code>: backward reachability from the p-states.</li>
+<li><code>EG p</code>: keep only the p-states, find the strongly connected components (SCCs) with a cycle, then label everything that can reach them inside the p-states.</li>
+<li><strong>Fairness:</strong> a liveness property can fail only because the environment never does something, e.g. the Otsu unit never says "done". <code>FAIRNESS odone</code> tells the checker to consider only paths where odone is true infinitely often.</li>
+<li>Property P8 <code>AG(SWEEP → AF CLEAR)</code> is <strong>false</strong> without fairness and <strong>true</strong> (P9) with it. We found this by hand too: SWEEP has a self-loop, so <code>EG ¬clear</code> holds there.</li>
+<li><strong>Our results:</strong></li>
+<li>12 properties on the controller (safety, reachability, non-blocking, liveness with fairness, an Until property).</li>
+<li>10 on <code>vga_timing</code> (frame/line synchronisation: counters bounded, SOF only at (0,0), EOL only in active video, frame wraps, <code>AG EF sof</code>, <code>AG EF eof</code>).</li>
+<li>3 on <code>ctrl_sync</code>; no deadlock state anywhere.</li>
+<li><strong>Bug injection:</strong></li>
+<li>B1: thresholds applied while a new frame has already started. P3 fails; the counterexample was replayed in simulation, which shows "thresholds changed inside frame".</li>
+<li>B2: CLEAR waits for a signal that never comes. The liveness property fails with a loop counterexample; in simulation the threshold never updates.</li>
+<li><strong>A story to tell:</strong> our first version of one property (<code>AG AF COLLECT</code>) was false even with fairness. With back-to-back frames the controller legitimately cycles PEND → SWEEP → CLEAR, so we corrected the property, not the design.</li>
+</ul>
+<h3 id="unit-6-bdds">Unit 6: BDDs</h3>
+<ul>
+<li><strong>ROBDD:</strong> a decision diagram with a fixed variable order and two reductions: merge identical subgraphs, and remove nodes whose two children are the same.</li>
+<li>It is <strong>canonical</strong>: two functions are equal exactly when their BDDs are the same node. That makes equivalence checking trivial.</li>
+<li><strong>Variable order matters:</strong></li>
+<li>Comparator <code>32|Gy| ≤ 13|Gx|</code> with 22 variables: interleaved MSB-first 554 nodes, interleaved LSB-first 403, blocked (all Gx bits, then all Gy bits) <strong>4,085</strong>.</li>
+<li><strong>Sifting</strong> (Rudell: move one variable at a time to its best position) gives <strong>235</strong>.</li>
+<li>Why is blocked bad? The BDD has to "remember" all 11 bits of Gx before it sees Gy.</li>
+<li><strong>Equivalence check:</strong> the specification, our QM cover, the ESPRESSO cover and the RTL after Yosys/ABC all give the same BDD node, so they are equivalent.</li>
+<li><strong>Symbolic reachability:</strong> R₀ = reset state; R_{k+1} = R_k ∪ Image(R_k), where the image is ∃(present state, inputs).[R(s) ∧ T(s,i,s′)]. Repeat until nothing changes. We found 6 reachable states out of 8 codes, the same as NuSMV.</li>
+</ul>
+<h3 id="unit-7-verification-techniques">Unit 7: Verification techniques</h3>
+<ul>
+<li><strong>Golden model</strong> (<code>model/golden.py</code>): the executable specification. Testbenches compare every stage, every pixel, at its exact position, so missing or extra pixels are caught too.</li>
+<li><strong>Directed + random + natural images</strong>, three timing modes (continuous, random gaps, real blanking). Totals: 29.75 million pixels at 640×480 with 0 mismatches, plus an exhaustive 4,169,764-case direction test.</li>
+<li><strong>Mutation testing:</strong> deliberately break the RTL (7 mutants) and check that the testbench catches each one. This proves the tests are not weak.</li>
+<li><strong>SVA assertions</strong> (13, attached with <code>bind</code> so the RTL is untouched). Example: <code>out_valid == $past(in_valid, 4)</code> means Sobel has a fixed 4-clock latency and II = 1. A mutant that outputs the illegal class 2'b11 is caught by an assertion.</li>
+<li><strong>Coverage:</strong> Verilator line + toggle coverage is 96.3%. The uncovered parts are histogram saturation, which cannot happen in a small frame and is tested separately.</li>
+<li><strong>Lint:</strong> <code>verilator --lint-only -Wall</code> gives only intentional "unused bits" warnings.</li>
+<li><strong>SymbiYosys:</strong></li>
+<li><strong>BMC</strong> (bounded model checking): no assertion fails in the first 30 cycles from reset.</li>
+<li><strong>k-induction:</strong> if the assertions hold for k consecutive cycles, they hold in the next one. Together with the base case this proves them for <em>all</em> time.</li>
+<li>Proved on <code>vga_timing</code> at the real 800×525 size, the controller, and the APB registers.</li>
+</ul>
+<hr />
+<h2 id="6-the-research-paper">6. The research paper</h2>
+<ul>
+<li><strong>Paper:</strong> L. Guo and S. Wu, <em>FPGA implementation of a real-time edge detection system based on an improved Canny algorithm</em>, Applied Sciences 13(2):870, 2023.</li>
+<li><strong>Their idea:</strong></li>
+<li>Choose T_hi automatically for each frame with <strong>Otsu's method</strong>: the threshold that best separates the histogram into two classes, i.e. maximises the between-class variance; T_lo = T_hi / 2.</li>
+<li>Do it <strong>without division</strong>, using logarithms: log(a/b) = log a − log b, and log₂ is approximated by a leading-one detector plus a small lookup table.</li>
+<li><strong>Problem:</strong></li>
+<li>Their design stores the whole frame, computes the threshold, then classifies the same frame. At 640×480 that needs <strong>80 RAMB36</strong>, and our chip has <strong>60</strong>. It does not fit.</li>
+<li>It also delays the output by a frame.</li>
+<li><strong>Our streaming version</strong> (<code>rtl/otsu_stream.sv</code> + <code>rtl/otsu_ctrl.sv</code>):</li>
+<li>Video frames are similar from one to the next, so we compute the threshold from frame N and use it for frame N+1. No frame buffer is needed.</li>
+<li>The 256-bin histogram is built on the fly in two ping-pong BRAMs. The read–add–write pipeline has one forwarding register, for when the same bin is hit on two clocks in a row.</li>
+<li>At the frame end, the paper's own Otsu unit (unchanged) runs during vertical blanking: about 520 clocks out of 36,000 available.</li>
+<li>The controller makes sure thresholds change <strong>only between frames</strong>. If a new frame has already started, the result waits for the next frame end (state PEND).</li>
+<li>The zero border of 6,684 pixels is added to bin 0, so our histogram equals the paper's whole-frame histogram.</li>
+<li><strong>Results:</strong></li>
+<li>Thresholds are <strong>identical</strong> to the paper engine on all 6 images (102, 110, 98, 84, 46, 80), and all 300,516 classes per image are equal.</li>
+<li>Cost: +1 BRAM tile, +10 DSP, Fmax 53 MHz (more than 2× the 25.2 MHz needed). The paper's version: 80 RAMB36, which does not fit.</li>
+<li>Quality: the strong-edge F1 rises from 0.41 to 0.83, because a fixed T_hi = 192 is too high for low-contrast images (e.g. <em>chelsea</em> gets T_hi = 46).</li>
+<li>For the strong+weak map, our fixed 64/192 thresholds are slightly better (0.925 vs 0.877). Say this honestly; there is a trade-off.</li>
+<li><strong>Status:</strong> verified in simulation and synthesised, but <strong>not yet in the board bitstream</strong> (planned future work).</li>
+</ul>
+<hr />
+<h2 id="7-hardwaresoftware-comparison">7. Hardware/software comparison</h2>
+<ul>
+<li>The same algorithm was written in C (<code>fw/swedge/swedge.c</code>) and run on the same PicoRV32 in simulation: <strong>437 clocks per pixel</strong>, with an output bit-exact with the model.</li>
+<li>The hardware takes <strong>1 clock per pixel</strong>, so it is about <strong>437× faster</strong>.</li>
+<li>For a full 640×480 frame, software would take about 5.3 s at 25 MHz (0.19 fps) against 60 fps in hardware.</li>
+<li>That is why the CPU only supervises (statistics, thresholds) and the hardware does the pixels. This is <strong>hardware/software partitioning</strong> (Unit 2).</li>
+</ul>
+<hr />
+<h2 id="8-key-numbers-cheat-sheet">8. Key numbers cheat sheet</h2>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Number</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Resolution / rate / clock</td>
+<td>640×480 @ 60 Hz, 800×525 raster, 25.18 MHz</td>
+</tr>
+<tr>
+<td>Throughput</td>
+<td>1 pixel / clock (II = 1)</td>
+</tr>
+<tr>
+<td>Latency</td>
+<td>3 lines + 15 clocks (2,415 clocks)</td>
+</tr>
+<tr>
+<td>Core resources</td>
+<td>2,108 LUT, 3,080 FF, 3 BRAM tiles, 0 DSP, ~87 MHz</td>
+</tr>
+<tr>
+<td>Full board (Z7, still image)</td>
+<td>7,937 LUT, 6,683 FF, 27.5 BRAM, WNS +6.73 ns, 0.36 W</td>
+</tr>
+<tr>
+<td>Full board (Z7, live)</td>
+<td>8,699 LUT, 7,585 FF, 27.5 BRAM, WNS +1.41 ns, 0.60 W</td>
+</tr>
+<tr>
+<td>Sobel transformations</td>
+<td>22 mult + 19 add, 12 steps → 0 mult + 15 add, 7 steps</td>
+</tr>
+<tr>
+<td>HLS schedules</td>
+<td>2 adders + 1 abs → 9 steps; 1 + 1 → 15 steps (ILP-optimal)</td>
+</tr>
+<tr>
+<td>Left-edge registers</td>
+<td>4</td>
+</tr>
+<tr>
+<td>FSM</td>
+<td>7 → 6 states (INIT ≡ RECOVER); one-hot 12 LUT</td>
+</tr>
+<tr>
+<td>NMS keep function</td>
+<td>12 inputs, 27 primes, 6 terms / 31 literals (QM = ESPRESSO = exact)</td>
+</tr>
+<tr>
+<td>dir_decide</td>
+<td>10 terms / 40 literals → 4 / 10</td>
+</tr>
+<tr>
+<td>BDD comparator</td>
+<td>554 / 403 / 4,085 nodes → 235 after sifting</td>
+</tr>
+<tr>
+<td>CTL</td>
+<td>25 properties (12 controller, 10 vga_timing, 3 ctrl_sync)</td>
+</tr>
+<tr>
+<td>SVA / coverage</td>
+<td>13 assertions, 5 covers, 96.3% line+toggle</td>
+</tr>
+<tr>
+<td>Pixels compared</td>
+<td>29,751,084 at 640×480, 0 mismatches</td>
+</tr>
+<tr>
+<td>HW vs SW</td>
+<td>437 clocks/pixel in software, 437× speed-up</td>
+</tr>
+<tr>
+<td>Paper (streaming)</td>
+<td>T_hi identical on 6 images; +1 BRAM, +10 DSP vs 80 RAMB36</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-likely-viva-questions-with-short-answers">9. Likely viva questions, with short answers</h2>
+<p><strong>Algorithm</strong>
+1. <em>Why Gaussian before Sobel?</em> Sobel is a derivative, and derivatives amplify noise. Blurring first removes small false edges.
+2. <em>Why |Gx|+|Gy|?</em> It is cheap (one adder) and keeps the ordering good enough for thresholding. √ would need multipliers or a CORDIC.
+3. <em>How do you get the direction without arctan?</em> Compare 32|Gy| with 13|Gx|: tan 22.5° ≈ 13/32. Shifts and adds only.
+4. <em>What does NMS do, and why the asymmetric tie rule?</em> It keeps only the local maximum across the edge, which gives thin edges. With "≥ earlier, &gt; later", a plateau of equal values keeps exactly one pixel.
+5. <em>Why a double threshold?</em> Strong edges are certain. Weak edges are kept as a separate class; full Canny would keep a weak edge only if it is connected to a strong one (hysteresis).</p>
+<p><strong>Architecture / RTL</strong>
+6. <em>How does the line buffer work?</em> Two BRAM rows used alternately plus a 3×3 shift-register window. The row being overwritten holds line y−2, which is no longer needed.
+7. <em>Why does the output have a 3-pixel border?</em> Each 3×3 stage needs a full neighbourhood, so each stage loses one pixel per side.
+8. <em>What happens if the input pauses?</em> Nothing breaks: everything is qualified by <code>valid</code> and the coordinates travel with the data.
+9. <em>Latency?</em> About 3 lines (one line per 3×3 stage) + 15 clocks of pipeline registers = 2,415 clocks.
+10. <em>Why are all four views aligned?</em> The original and smoothed views go through a delay line of the same 2,415 clocks.
+11. <em>What is II=1?</em> Initiation interval 1: a new input can start every clock.
+12. <em>Why no DSP?</em> Every constant multiply is shift-add.
+13. <em>Clock domain crossings?</em> In live mode, from the 40 MHz HDMI receive clock to the 25.18 MHz pixel clock, through an asynchronous FIFO (Gray-coded pointers inside), declared asynchronous in the constraints.
+14. <em>Reset?</em> Synchronous, active high. The BRAMs are not reset; the valid logic ignores the first two rows instead.</p>
+<p><strong>HLS</strong>
+15. <em>Difference between ASAP and ALAP?</em> Earliest vs latest possible step; the difference is the mobility. Ops with mobility 0 are critical.
+16. <em>List scheduling vs ILP vs FDS?</em> List: greedy, resource-constrained, fast. ILP: exact, slow on big graphs. FDS: heuristic, time-constrained, balances the usage of units.
+17. <em>Left edge?</em> Sort the lifetime intervals by start and pack them into the first free register. It is optimal for interval graphs.
+18. <em>Why is the "minimum-area" FSMD bigger?</em> Multiplexers plus the 16-bit-wide shared units cost more than the small adders saved (Part 5).
+19. <em>What did CSE save?</em> 2 adders (10 → 8 for the gradients).
+20. <em>Tree-height reduction?</em> A balanced tree instead of a chain: depth log₂(n) instead of n−1.</p>
+<p><strong>Logic / FSM</strong>
+21. <em>Implication chart?</em> Cross out pairs with different outputs, then pairs whose implied pairs are crossed out. Whatever is left is equivalent.
+22. <em>Why does one-hot use fewer LUTs?</em> Each state bit's next-state equation is simple. It needs more FFs, but FPGAs have plenty of FFs.
+23. <em>Prime implicant vs essential prime?</em> A prime cannot be made bigger. An essential prime is the only prime covering some minterm.
+24. <em>ESPRESSO steps?</em> EXPAND (make cubes prime), IRREDUNDANT (remove redundant cubes), REDUCE (shrink cubes to escape a local minimum), repeated.
+25. <em>What is a kernel?</em> A cube-free quotient of an expression by a cube (the co-kernel). It is used to find common factors in multilevel logic.</p>
+<p><strong>Formal</strong>
+26. <em>Safety vs liveness?</em> Safety: something bad never happens (AG ¬bad); a finite counterexample exists. Liveness: something good eventually happens (AF good); its counterexample is an infinite loop (a lasso).
+27. <em>Why fairness?</em> Without it, the checker can blame the environment (e.g. "the Otsu unit never finishes"). Fairness restricts the check to realistic paths.
+28. <em>AG EF vs AF?</em> AG EF p: p is always <em>reachable</em> (non-blocking). AG AF p: p will <em>definitely</em> happen again.
+29. <em>What is a counterexample, and how did you use it?</em> A trace that violates the property. We replayed both bug traces in simulation and saw the bugs.
+30. <em>State explosion?</em> The number of states grows exponentially with the number of FFs. That is why we model-check reduced sizes in NuSMV, and use k-induction (SymbiYosys) for the real size.
+31. <em>BMC vs k-induction?</em> BMC proves "no bug in the first k cycles". Induction proves "if correct for k cycles, then correct forever"; with the base case this is a complete proof.
+32. <em>Why does BDD variable order matter?</em> A BDD's size can change exponentially with the order. Related bits should be close together: interleave the two operands of a comparator.
+33. <em>How does a BDD do equivalence checking?</em> ROBDDs are canonical, so two equal functions give the same node.</p>
+<p><strong>Verification</strong>
+34. <em>How do you know your testbench is good?</em> Mutation testing (7 + 1 mutants caught), 96% coverage, an exhaustive direction test, and two independent golden models that agree.
+35. <em>What is <code>bind</code>?</em> It attaches an assertion module to an RTL module without editing the RTL.
+36. <em>What did simulation find?</em> A zero-threshold corner case (a zero NMS value became "weak"), a histogram clear losing a sample, an APB status event lost on a simultaneous clear, and a Gaussian data/valid skew. On hardware: BTN0 reset the thresholds to the presets (fixed in the firmware).</p>
+<p><strong>Paper</strong>
+37. <em>Why didn't you implement the paper exactly?</em> It needs a frame buffer of 80 RAMB36, but the chip has 60. We kept their Otsu unit and changed the architecture to streaming.
+38. <em>Is using frame N's threshold on frame N+1 correct?</em> For video, yes: consecutive frames are almost the same. For a still image it gives exactly the paper's result from the second frame on, as our test shows.
+39. <em>Why log domain?</em> It avoids division: comparing (a²)/(b·c) becomes 2·log a − log b − log c, which is only subtractions.</p>
+<p><strong>SoC / board</strong>
+40. <em>Why APB?</em> It is simple, low-power and has a fixed two-phase protocol, which is enough for a few control registers.
+41. <em>How does the laptop talk to the board?</em> JTAG-to-AXI over the programming cable: it writes the photo and the firmware, and reads the mailbox.
+42. <em>Why HDMI and not VGA?</em> The Z7-10 has no VGA connector. We generate exact VGA (VESA) timing and send it over DVI/HDMI.</p>
+<hr />
+<h2 id="10-honest-limitations-and-how-to-say-them">10. Honest limitations, and how to say them</h2>
+<table>
+<thead>
+<tr>
+<th>Limitation</th>
+<th>What to say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HDMI instead of VGA</td>
+<td>The board has no VGA port. The timing is exactly VGA 640×480@60; only the physical layer differs (TMDS).</td>
+</tr>
+<tr>
+<td>No DMA / DDR, no OV7670</td>
+<td>DMA needs the Zynq ARM side + DDR + AXI VDMA. We used a BRAM frame store loaded over JTAG, and live video over HDMI-in from a webcam instead of the OV7670.</td>
+</tr>
+<tr>
+<td>320×240 stored image</td>
+<td>A full 8-bit 640×480 frame (2.46 Mb) is bigger than all the on-chip BRAM (2.16 Mb). It is shown 2× enlarged.</td>
+</tr>
+<tr>
+<td>No interrupt</td>
+<td>The firmware polls once per frame (60 Hz); an interrupt is easy to add.</td>
+</tr>
+<tr>
+<td>Paper unit not on the board yet</td>
+<td>It is verified and synthesised (fits, meets timing in OOC); integrating it behind a switch is next.</td>
+</tr>
+<tr>
+<td>No SDF timing simulation</td>
+<td>Static timing analysis passes with margin, and the routed-netlist functional simulation passes; the SDF run of the HDMI serialiser was not finished.</td>
+</tr>
+<tr>
+<td>NuSMV uses small sizes</td>
+<td>That is state explosion. SymbiYosys k-induction proves the real 800×525 size.</td>
+</tr>
+<tr>
+<td>No ILA screenshot</td>
+<td>We compared hardware register read-backs (edge count, 64-bin histogram) with the model instead. That is a numeric match, even stronger than a waveform.</td>
+</tr>
+<tr>
+<td>Full hysteresis not in the shipped design</td>
+<td>Weak and strong are shown as separate classes. A hysteresis stage exists (<code>hyst_stage.sv</code>) but is not in the bitstream.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-demo-script-2-minutes">11. Demo script (2 minutes)</h2>
+<ol>
+<li>Program the board, then show the photo: SW1:0 = 00 original, 01 blurred, 10 strong edges, 11 classes (weak/strong colours).</li>
+<li>Change SW3:2 to show the threshold presets changing the edge count.</li>
+<li>On the laptop, <code>fpga_image.py threshold 30 90</code>: the CPU applies new thresholds; the mailbox edge count matches the Python model.</li>
+<li>Press BTN2 for live mode: wave a hand in front of the webcam, then switch the views live.</li>
+<li>If asked: open <code>report/VL401_G07_P07.pdf</code> Section 9 for the paper, or run <code>make verify</code> for the regressions.</li>
+</ol>
+<hr />
+<h2 id="12-where-things-are-file-map">12. Where things are (file map)</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Core</td>
+<td><code>rtl/top.sv</code> (edge_pipeline), <code>linebuf.sv</code>, <code>gauss.sv</code>, <code>sobel.sv</code>, <code>dir_decide.sv</code>, <code>dirnms.sv</code>, <code>classify_hist.sv</code></td>
+</tr>
+<tr>
+<td>Board / video</td>
+<td><code>rtl/video/zybo_hdmi_top.sv</code>, <code>edge_video.sv</code>, <code>frame_store.sv</code>, <code>rx_timing.sv</code>, <code>rx_downscale.sv</code>, <code>rtl/vga_timing.sv</code></td>
+</tr>
+<tr>
+<td>SoC</td>
+<td><code>rtl/soc/cpu_subsys.sv</code>, <code>rtl/apb_regs.sv</code>, <code>fw/src/main.c</code></td>
+</tr>
+<tr>
+<td>Paper (streaming)</td>
+<td><code>rtl/otsu_stream.sv</code>, <code>rtl/otsu_ctrl.sv</code>, <code>rtl/study/edge_pipeline_otsu.sv</code>, <code>scripts/otsu_stream_check.py</code></td>
+</tr>
+<tr>
+<td>HLS</td>
+<td><code>hls/sobel_hls.py</code>, <code>rtl/study/sobel_fsmd_*.sv</code></td>
+</tr>
+<tr>
+<td>Logic / FSM</td>
+<td><code>logic/logic_study.py</code>, <code>logic/espresso_direction.py</code></td>
+</tr>
+<tr>
+<td>Formal</td>
+<td><code>formal/run_ctl.py</code>, <code>formal/otsu_ctl.py</code>, <code>formal/bdd_study.py</code>, <code>formal/run_sby.py</code>, <code>formal/sby/</code></td>
+</tr>
+<tr>
+<td>Verification</td>
+<td><code>tb/</code>, <code>tb/sva/core_sva.sv</code>, <code>scripts/core_regression.py</code>, <code>scripts/sva_coverage.py</code></td>
+</tr>
+<tr>
+<td>Golden model</td>
+<td><code>model/golden.py</code></td>
+</tr>
+</tbody>
+</table></body></html>

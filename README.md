@@ -10,8 +10,9 @@ photo (laptop) --JTAG--> 320x240 frame store (BRAM) --2x--> grayscale -> Gaussia
                                               monitor <-- HDMI <-- views: original / smoothed / edges / classes     APB registers <--> PicoRV32 (RV32I)
 ```
 
-**Hardware-tested on the original Digilent Zybo** (xc7z010clg400-1). The **Zybo Z7-10** variant builds and passes functional netlist simulation
-but has **not** been run on a board. Full results, evidence and limitations: **[docs/FINAL_REPORT.md](docs/FINAL_REPORT.md)**.
+**Hardware-tested on the Zybo Z7-10** (the demo board; still-image and live-webcam modes) and on the original Digilent Zybo (xc7z010clg400-1).
+**Course report: [report/VL401_G07_P07.pdf](report/VL401_G07_P07.pdf)** · viva study guide: [docs/VIVA_GUIDE.md](docs/VIVA_GUIDE.md) ·
+earlier evidence summary: [docs/FINAL_REPORT.md](docs/FINAL_REPORT.md).
 
 ## Highlights
 * Bit-exact against a Python/NumPy golden model: 33 frames at 640x480 (incl. 10 natural/synthetic corpus images), exhaustive 4.17-million-case
@@ -31,7 +32,7 @@ build/venv/bin/python scripts/fpga_image.py send my_photo.jpg                   
 build/venv/bin/python scripts/fpga_image.py threshold 30 90                                # laptop sets edge thresholds (0..2047)
 ```
 Switches/buttons, troubleshooting and a talking script for a live demo: **[docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md)**.
-Use `P7_BOARD=zybo_z7` for the Zybo Z7-10 build (untested on hardware). Both boards share the same FPGA ID, so the programming script refuses to run
+Use `P7_BOARD=zybo_z7` for the Zybo Z7-10 build (hardware-verified; live webcam mode: `make live`, see docs/DEMO_GUIDE.md). Both boards share the same FPGA ID, so the programming script refuses to run
 without `P7_BOARD`.
 
 ## Verify without hardware
@@ -59,7 +60,7 @@ make study       # paper/baseline/resource comparison (needs Vivado for the reso
 ## Status and honest limitations
 * Post-route **SDF timing simulation is unresolved** (boards are programmed with `P7_HW_DEBUG=1`); static timing, CDC/DRC and functional netlist simulation pass.
 * **No DDR/DMA, no camera**: photos are stored at 320x240 in on-chip BRAM (a full 8-bit 640x480 frame does not fit) and shown 2x enlarged.
-* Zybo Z7-10 not run on hardware. The APB CRC register is not wired to a CRC of the edge map.
+* The APB CRC register is not wired to a CRC of the edge map. The streaming adaptive-Otsu (paper) unit is verified and synthesised but not in the bitstream yet.
 * The paper comparison uses the paper's adaptive-threshold *engine* only; see section 6 of the report for exactly what is and is not reproduced.
 
 ## Credits and licences
