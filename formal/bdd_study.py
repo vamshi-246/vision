@@ -12,7 +12,9 @@
     R0 = reset state, R_{k+1} = R_k | Img(R_k), image by existential quantification of present state and inputs.
 Outputs build/bdd/bdd_study.json.
 """
-import json, re, subprocess, sys
+import json, os, re, subprocess, sys
+if os.environ.get("PYTHONHASHSEED") != "0":            # dd sifting visits variables in hash order: fix it
+    os.environ["PYTHONHASHSEED"] = "0"; os.execv(sys.executable, [sys.executable] + sys.argv)
 from pathlib import Path
 from dd import autoref as _bdd
 _bdd.Function.__xor__ = lambda a, b: a.bdd.apply("xor", a, b)   # dd 0.6 has no ^ operator

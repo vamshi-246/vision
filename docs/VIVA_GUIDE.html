@@ -299,7 +299,7 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 <li>It is <strong>canonical</strong>: two functions are equal exactly when their BDDs are the same node. That makes equivalence checking trivial.</li>
 <li><strong>Variable order matters:</strong></li>
 <li>Comparator <code>32|Gy| ≤ 13|Gx|</code> with 22 variables: interleaved MSB-first 554 nodes, interleaved LSB-first 403, blocked (all Gx bits, then all Gy bits) <strong>4,085</strong>.</li>
-<li><strong>Sifting</strong> (Rudell: move one variable at a time to its best position) gives <strong>235</strong>.</li>
+<li><strong>Sifting</strong> (Rudell: move one variable at a time to its best position) gives <strong>283</strong> (228–405 depending on the order in which variables are visited; it is a greedy heuristic).</li>
 <li>Why is blocked bad? The BDD has to "remember" all 11 bits of Gx before it sees Gy.</li>
 <li><strong>Equivalence check:</strong> the specification, our QM cover, the ESPRESSO cover and the RTL after Yosys/ABC all give the same BDD node, so they are equivalent.</li>
 <li><strong>Symbolic reachability:</strong> R₀ = reset state; R_{k+1} = R_k ∪ Image(R_k), where the image is ∃(present state, inputs).[R(s) ∧ T(s,i,s′)]. Repeat until nothing changes. We found 6 reachable states out of 8 codes, the same as NuSMV.</li>
@@ -335,7 +335,7 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 <li>The zero border of 6,684 pixels is added to bin 0, so our histogram equals the paper's whole-frame histogram.</li>
 <li><strong>Results:</strong></li>
 <li>Thresholds are <strong>identical</strong> to the paper engine on all 6 images (102, 110, 98, 84, 46, 80), and all 300,516 classes per image are equal.</li>
-<li>Cost: +1 BRAM tile, +10 DSP, Fmax 53 MHz (more than 2× the 25.2 MHz needed). The paper's version: 80 RAMB36, which does not fit.</li>
+<li>Cost: +1 BRAM tile, +10 DSP, Fmax 52 MHz (more than 2× the 25.2 MHz needed). The slow path is the paper's combinational 48-bit log₂ unit (25 logic levels); one more pipeline register would fix it. The paper's version: 80 RAMB36, which does not fit.</li>
 <li>Quality: the strong-edge F1 rises from 0.41 to 0.83, because a fixed T_hi = 192 is too high for low-contrast images (e.g. <em>chelsea</em> gets T_hi = 46).</li>
 <li>For the strong+weak map, our fixed 64/192 thresholds are slightly better (0.925 vs 0.877). Say this honestly; there is a trade-off.</li>
 <li><strong>Status:</strong> verified in simulation and synthesised, but <strong>not yet in the board bitstream</strong> (planned future work).</li>
@@ -408,7 +408,7 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 </tr>
 <tr>
 <td>BDD comparator</td>
-<td>554 / 403 / 4,085 nodes → 235 after sifting</td>
+<td>554 / 403 / 4,085 nodes → 283 after sifting (228–405)</td>
 </tr>
 <tr>
 <td>CTL</td>
@@ -416,7 +416,7 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 </tr>
 <tr>
 <td>SVA / coverage</td>
-<td>13 assertions, 5 covers, 96.3% line+toggle</td>
+<td>13 assertions, 4 covers (all hit), 96.3% line+toggle (31×23 run)</td>
 </tr>
 <tr>
 <td>Pixels compared</td>
@@ -428,7 +428,7 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 </tr>
 <tr>
 <td>Paper (streaming)</td>
-<td>T_hi identical on 6 images; +1 BRAM, +10 DSP vs 80 RAMB36</td>
+<td>T_hi identical on 6 images; 3,385 LUT, +1 BRAM, +10 DSP, 52 MHz vs 80 RAMB36</td>
 </tr>
 </tbody>
 </table>
@@ -475,7 +475,7 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 <p><strong>Verification</strong>
 34. <em>How do you know your testbench is good?</em> Mutation testing (7 + 1 mutants caught), 96% coverage, an exhaustive direction test, and two independent golden models that agree.
 35. <em>What is <code>bind</code>?</em> It attaches an assertion module to an RTL module without editing the RTL.
-36. <em>What did simulation find?</em> A zero-threshold corner case (a zero NMS value became "weak"), a histogram clear losing a sample, an APB status event lost on a simultaneous clear, and a Gaussian data/valid skew. On hardware: BTN0 reset the thresholds to the presets (fixed in the firmware).</p>
+36. <em>What did simulation find?</em> A zero-threshold corner case (a zero NMS value became "weak"), a histogram clear losing a sample, and an APB status event lost on a simultaneous clear. On hardware: BTN0 reset the thresholds to the presets (fixed in the firmware).</p>
 <p><strong>Paper</strong>
 37. <em>Why didn't you implement the paper exactly?</em> It needs a frame buffer of 80 RAMB36, but the chip has 60. We kept their Otsu unit and changed the architecture to streaming.
 38. <em>Is using frame N's threshold on frame N+1 correct?</em> For video, yes: consecutive frames are almost the same. For a still image it gives exactly the paper's result from the second frame on, as our test shows.

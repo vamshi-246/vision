@@ -599,12 +599,12 @@ Variable ordering & Nodes\\
 Interleaved, MSB first ($a_{10},b_{10},a_9,b_9,\ldots$) & 554\\
 Interleaved, LSB first & 403\\
 Blocked (all $|G_x|$ bits, then all $|G_y|$ bits) & 4{,}085\\
-Blocked, after Rudell sifting & \textbf{235}\\
+Blocked, after Rudell sifting (fixed seed; 228--405 over six seeds) & \textbf{283}\\
 \bottomrule
 \end{tabular}
 \end{table}
-The blocked order must remember all of $|G_x|$ before it sees $|G_y|$, hence the 10$\times$ blow-up; sifting finds an order better than
-both interleavings. For NMS-select, ordering the sector bits first gives 14--17 nodes against 43--53 with the comparator bits first.
+The blocked order must remember all of $|G_x|$ before it sees $|G_y|$, hence the 10$\times$ blow-up. Sifting is greedy and its result
+depends on the order in which variables are visited, but every run ended far below the blocked order and usually below both interleavings. For NMS-select, ordering the sector bits first gives 14--17 nodes against 43--53 with the comparator bits first.
 \textbf{Equivalence:} the specification (on the care set), our QM/UCP cover, the ESPRESSO cover and the RTL after Yosys+ABC mapping
 (read back from BLIF) all reduce to the same ROBDD node, so they are equivalent. \textbf{Symbolic reachability} of the controller
 RTL (next-state functions from Yosys, image computation by existential quantification) reaches a fixed point after 6 iterations with

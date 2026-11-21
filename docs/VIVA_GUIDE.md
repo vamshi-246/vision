@@ -225,7 +225,7 @@ A **CDFG** is a graph of operations (nodes) and data dependencies (edges). Trans
   * It is **canonical**: two functions are equal exactly when their BDDs are the same node. That makes equivalence checking trivial.
 * **Variable order matters:**
   * Comparator `32|Gy| ≤ 13|Gx|` with 22 variables: interleaved MSB-first 554 nodes, interleaved LSB-first 403, blocked (all Gx bits, then all Gy bits) **4,085**.
-  * **Sifting** (Rudell: move one variable at a time to its best position) gives **235**.
+  * **Sifting** (Rudell: move one variable at a time to its best position) gives **283** (228–405 depending on the order in which variables are visited; it is a greedy heuristic).
   * Why is blocked bad? The BDD has to "remember" all 11 bits of Gx before it sees Gy.
 * **Equivalence check:** the specification, our QM cover, the ESPRESSO cover and the RTL after Yosys/ABC all give the same BDD node, so they are equivalent.
 * **Symbolic reachability:** R₀ = reset state; R_{k+1} = R_k ∪ Image(R_k), where the image is ∃(present state, inputs).[R(s) ∧ T(s,i,s′)]. Repeat until nothing changes. We found 6 reachable states out of 8 codes, the same as NuSMV.
@@ -292,7 +292,7 @@ A **CDFG** is a graph of operations (nodes) and data dependencies (edges). Trans
 | FSM | 7 → 6 states (INIT ≡ RECOVER); one-hot 12 LUT |
 | NMS keep function | 12 inputs, 27 primes, 6 terms / 31 literals (QM = ESPRESSO = exact) |
 | dir_decide | 10 terms / 40 literals → 4 / 10 |
-| BDD comparator | 554 / 403 / 4,085 nodes → 235 after sifting |
+| BDD comparator | 554 / 403 / 4,085 nodes → 283 after sifting (228–405) |
 | CTL | 25 properties (12 controller, 10 vga_timing, 3 ctrl_sync) |
 | SVA / coverage | 13 assertions, 4 covers (all hit), 96.3% line+toggle (31×23 run) |
 | Pixels compared | 29,751,084 at 640×480, 0 mismatches |
