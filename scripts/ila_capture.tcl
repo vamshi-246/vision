@@ -1,6 +1,7 @@
 # ILA capture on the Zybo Z7 (bitstream from `make ila`, build/hdmi_z7_ila/).  Explicit hardware step; never run by the build.
 #   program:  P7_BOARD=zybo_z7 vivado -mode batch -source scripts/ila_capture.tcl -tclargs program
 #   capture:  P7_BOARD=zybo_z7 vivado -mode gui   -source scripts/ila_capture.tcl -tclargs capture [ROW]
+#   show:     P7_BOARD=zybo_z7 vivado -mode gui   -source scripts/ila_capture.tcl -tclargs show   (re-open the saved capture, no board)
 # "capture" arms the ILA with the trigger  cv == 1 && cy == ROW && cx == 3  (first classified pixel of output row ROW,
 # default 240 = middle of the frame), uploads the 4096-sample window, opens it in the waveform viewer (GUI mode) and saves
 # build/hdmi_z7_ila/capture.ila + capture.csv.  "program" loads the ILA bitstream (do this before `fpga_image.py send`).
@@ -13,6 +14,13 @@ foreach f [list $bit $ltx] {if {![file exists $f]} {error "Missing $f: run `make
 set mode [expr {[llength $argv] ? [lindex $argv 0] : "capture"}]
 set row  [expr {[llength $argv] > 1 ? [lindex $argv 1] : 240}]
 
+# "show": re-open the last saved capture in the waveform viewer (no board needed)
+if {$mode eq "show"} {
+ open_hw_manager
+ set data [read_hw_ila_data [file join $dir capture.ila]]
+ display_hw_ila_data $data
+ return
+}
 open_hw_manager
 connect_hw_server
 open_hw_target

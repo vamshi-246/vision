@@ -684,18 +684,19 @@ Core only (\texttt{edge\_pipeline}, OOC) & \multicolumn{2}{c}{2{,}108 LUT, 3{,}0
 \end{table}
 Most of the BRAM is the 320$\times$240 frame store (a full 8-bit 640$\times$480 frame, 2.46\,Mb, exceeds the chip's 2.16\,Mb) and the
 RV32 memory; the core itself needs 3 tiles. CDC between the HDMI receiver clock and the pixel clock is through an asynchronous
-FIFO and is declared with \texttt{set\_clock\_groups}. \textbf{Hardware evidence.} Instead of an ILA screenshot we compare
-hardware registers with the model: after a photo upload the 76{,}800-byte frame store reads back identical, and the
-\emph{CPU-read edge count and all 64 histogram bins equal the golden model} (on the Z7-10: edge count 4{,}991 for the test photo; on the original Zybo also for a second photo and a laptop-written threshold override).
-(An ILA was used during the HDMI-receiver bring-up to observe the TMDS alignment, but no capture was archived.)
-\textbf{Demo.} The monitor shows the original, smoothed, strong-edge and class views selected by SW1:0 (Fig.~\ref{fig:demo}); SW3:2
-select four threshold presets; BTN2 toggles live webcam mode, in which the laptop webcam is processed live.
+FIFO and is declared with \texttt{set\_clock\_groups}. \textbf{Hardware evidence.} A debug build (\texttt{make ila}) adds an ILA on the pixel clock: 16 probes (107 bits, 4{,}096
+samples) on the core input, the Sobel stage, the classified output, the thresholds and the edge counter (Fig.~\ref{fig:ila}).
+Triggered on output row 240 of an uploaded photo, \emph{all 3{,}260 classified pixels in the capture equal the golden model's
+classes} (0 mismatches). The registers agree as well: the 76{,}800-byte frame store reads back identical, and the CPU-read edge count
+and all 64 histogram bins equal the model (Z7-10: 4{,}991 and 2{,}275 strong edges for two photos; original Zybo: also a laptop-written threshold override).
 \begin{figure}[H]\centering
-\includegraphics[width=0.30\linewidth]{views.png}\hspace{4mm}
-\includegraphics[width=0.42\linewidth]{monitor.jpg}
-\caption{Left: the four views of the board design in the routed-netlist simulation (original, smoothed, strong edges, classes).
-Right: the Zybo Z7-10 driving the monitor at 640$\times$480 over HDMI (original view of the test pattern).}\label{fig:demo}
+\includegraphics[width=\linewidth]{ila_fig.png}
+\caption{ILA capture on the Zybo Z7-10 (Vivado hardware manager; stored photo, thresholds 80/200). The cursor (sample 704) is
+on output pixel (451, 240), classified strong (\texttt{cls}=2), and \texttt{running\_edges} counts it (1053$\to$1055 over two strong
+pixels). Each probe sits at its own pipeline stage, so one column shows different pixels at input, Sobel and output.}\label{fig:ila}
 \end{figure}
+\textbf{Demo.} The monitor shows the original, smoothed, strong-edge and class views selected by SW1:0 (Fig.~\ref{fig:demo} in Appendix~\ref{app:demo}); SW3:2
+select four threshold presets; BTN2 toggles live webcam mode, in which the laptop webcam is processed live.
 
 %% =====================================================================
 \section{Discussion and Limitations}
@@ -827,5 +828,13 @@ FAIRNESS bool(top._eof)
 FAIRNESS (bool(top._en) & bool(top._sof))
 CTLSPEC AG (bool(top._swap) -> AX AF (bool(top._apply) | top._state = 0ub3_000));
 \end{lstlisting}
+
+\subsection{Board demonstration views}\label{app:demo}
+\begin{figure}[H]\centering
+\includegraphics[width=0.30\linewidth]{views.png}\hspace{4mm}
+\includegraphics[width=0.42\linewidth]{monitor.jpg}
+\caption{Left: the four views of the board design in the routed-netlist simulation (original, smoothed, strong edges, classes).
+Right: the Zybo Z7-10 driving the monitor at 640$\times$480 over HDMI (original view of the test pattern).}\label{fig:demo}
+\end{figure}
 
 \end{document}

@@ -241,6 +241,7 @@ A **CDFG** is a graph of operations (nodes) and data dependencies (edges). Trans
   * **BMC** (bounded model checking): no assertion fails in the first 30 cycles from reset.
   * **k-induction:** if the assertions hold for k consecutive cycles, they hold in the next one. Together with the base case this proves them for *all* time.
   * Proved on `vga_timing` at the real 800×525 size, the controller, and the APB registers.
+* **On the board: ILA** (Integrated Logic Analyzer, `make ila`). A debug build adds a logic analyzer inside the FPGA: 16 probes on the pixel clock (input pixel, Sobel magnitude/direction, output class and coordinates, thresholds, edge counter), 4,096 samples deep. It was triggered on output row 240 of an uploaded photo; all 3,260 classified pixels in the capture equal the golden model (0 mismatches). The register read-backs (edge count, 64-bin histogram) match the model too.
 
 ---
 
@@ -360,6 +361,7 @@ A **CDFG** is a graph of operations (nodes) and data dependencies (edges). Trans
 40. *Why APB?* It is simple, low-power and has a fixed two-phase protocol, which is enough for a few control registers.
 41. *How does the laptop talk to the board?* JTAG-to-AXI over the programming cable: it writes the photo and the firmware, and reads the mailbox.
 42. *Why HDMI and not VGA?* The Z7-10 has no VGA connector. We generate exact VGA (VESA) timing and send it over DVI/HDMI.
+43. *How did you debug on the board? (ILA screenshot)* An ILA build: Vivado inserts a logic analyzer core after synthesis on nets we marked `mark_debug`, connected through the JTAG debug hub. We trigger on `cv=1 && cy=240 && cx=3` (start of output row 240). In the screenshot the cursor is on pixel (451, 240) with `cls=2` (strong), and `running_edges` counts it. Probes are at different pipeline stages, so values in one column are different pixels. It costs ~11 BRAM tiles, so it is a separate debug bitstream, not the demo one.
 
 ---
 
@@ -374,7 +376,6 @@ A **CDFG** is a graph of operations (nodes) and data dependencies (edges). Trans
 | Paper unit not on the board yet | It is verified and synthesised (fits, meets timing in OOC); integrating it behind a switch is next. |
 | No SDF timing simulation | Static timing analysis passes with margin, and the routed-netlist functional simulation passes; the SDF run of the HDMI serialiser was not finished. |
 | NuSMV uses small sizes | That is state explosion. SymbiYosys k-induction proves the real 800×525 size. |
-| No ILA screenshot | We compared hardware register read-backs (edge count, 64-bin histogram) with the model instead. That is a numeric match, even stronger than a waveform. |
 | Full hysteresis not in the shipped design | Weak and strong are shown as separate classes. A hysteresis stage exists (`hyst_stage.sv`) but is not in the bitstream. |
 
 ---

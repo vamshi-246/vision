@@ -316,6 +316,7 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 <li><strong>BMC</strong> (bounded model checking): no assertion fails in the first 30 cycles from reset.</li>
 <li><strong>k-induction:</strong> if the assertions hold for k consecutive cycles, they hold in the next one. Together with the base case this proves them for <em>all</em> time.</li>
 <li>Proved on <code>vga_timing</code> at the real 800×525 size, the controller, and the APB registers.</li>
+<li><strong>On the board: ILA</strong> (Integrated Logic Analyzer, <code>make ila</code>). A debug build adds a logic analyzer inside the FPGA: 16 probes on the pixel clock (input pixel, Sobel magnitude/direction, output class and coordinates, thresholds, edge counter), 4,096 samples deep. It was triggered on output row 240 of an uploaded photo; all 3,260 classified pixels in the capture equal the golden model (0 mismatches). The register read-backs (edge count, 64-bin histogram) match the model too.</li>
 </ul>
 <hr />
 <h2 id="6-the-research-paper">6. The research paper</h2>
@@ -483,7 +484,8 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 <p><strong>SoC / board</strong>
 40. <em>Why APB?</em> It is simple, low-power and has a fixed two-phase protocol, which is enough for a few control registers.
 41. <em>How does the laptop talk to the board?</em> JTAG-to-AXI over the programming cable: it writes the photo and the firmware, and reads the mailbox.
-42. <em>Why HDMI and not VGA?</em> The Z7-10 has no VGA connector. We generate exact VGA (VESA) timing and send it over DVI/HDMI.</p>
+42. <em>Why HDMI and not VGA?</em> The Z7-10 has no VGA connector. We generate exact VGA (VESA) timing and send it over DVI/HDMI.
+43. <em>How did you debug on the board? (ILA screenshot)</em> An ILA build: Vivado inserts a logic analyzer core after synthesis on nets we marked <code>mark_debug</code>, connected through the JTAG debug hub. We trigger on <code>cv=1 &amp;&amp; cy=240 &amp;&amp; cx=3</code> (start of output row 240). In the screenshot the cursor is on pixel (451, 240) with <code>cls=2</code> (strong), and <code>running_edges</code> counts it. Probes are at different pipeline stages, so values in one column are different pixels. It costs ~11 BRAM tiles, so it is a separate debug bitstream, not the demo one.</p>
 <hr />
 <h2 id="10-honest-limitations-and-how-to-say-them">10. Honest limitations, and how to say them</h2>
 <table>
@@ -521,10 +523,6 @@ mag = |Gx| + |Gy|                                   (L1 norm, 0..2040, 11 bits)
 <tr>
 <td>NuSMV uses small sizes</td>
 <td>That is state explosion. SymbiYosys k-induction proves the real 800×525 size.</td>
-</tr>
-<tr>
-<td>No ILA screenshot</td>
-<td>We compared hardware register read-backs (edge count, 64-bin histogram) with the model instead. That is a numeric match, even stronger than a waveform.</td>
 </tr>
 <tr>
 <td>Full hysteresis not in the shipped design</td>
