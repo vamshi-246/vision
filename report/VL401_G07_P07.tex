@@ -113,21 +113,17 @@ Section~\ref{sec:contrib}.\\[1.0cm]
 
 %% =====================================================================
 \begin{abstract}
-Edge detection is the first step of most machine-vision systems, and on video it must keep up with the pixel clock.
-We designed a streaming Canny-style edge detector in SystemVerilog that processes 640$\times$480 video at 60\,Hz with
-one pixel per clock: grayscale, 3$\times$3 Gaussian, Sobel $|G_x|+|G_y|$ with a quantised direction, non-maximum
-suppression (NMS) and a double threshold, using BRAM line buffers.
-The Sobel datapath was derived by hand HLS (tree-height reduction and common-subexpression elimination cut 22
-multiplications and 19 additions to 15 additions and the critical path from 12 to 7 steps), and the
-direction/NMS-select logic was minimised with ESPRESSO, our own Quine--McCluskey/unate-covering solver and BDDs.
-A PicoRV32 RV32I core reads the edge count and a 64-bin histogram over APB and sets the thresholds.
-From the paper of Guo and Wu we incorporated an adaptive Otsu threshold. Their design needs a whole-frame buffer
-(80 RAMB36, more than the chip has); we built a streaming form that adds one BRAM tile and gives thresholds
-bit-identical to the paper's engine on all six test images.
-Verification covers 29.8 million pixels compared bit-exactly with a Python golden model, 13 SVA assertions (96.3\% line/toggle
-coverage), 25 CTL properties in NuSMV including fairness, k-induction proofs in SymbiYosys and mutation tests.
-On a Zybo Z7-10 the design meets timing at 25.18\,MHz, uses 3 BRAM tiles and no DSP in the core, and runs live
-webcam video over HDMI; the hardware is about 437$\times$ faster than the same algorithm in software on the RV32 core.
+Edge detection is the first step of most machine-vision systems, and on video it must keep up with the pixel rate.
+We designed a streaming Canny-style edge detector for 640$\times$480 video at 60\,Hz, one pixel per clock:
+3$\times$3 Gaussian, Sobel $|G_x|+|G_y|$ with a quantised direction, non-maximum suppression (NMS) and a double threshold.
+The Sobel datapath was derived by hand HLS (all 22 multiplications removed,
+critical path from 12 to 7 steps); the direction/NMS-select logic was minimised with ESPRESSO, our own Quine--McCluskey
+solver and BDDs. A PicoRV32 core reads the edge count and histogram over APB and sets the thresholds.
+From Guo and Wu we took an adaptive Otsu threshold. Their design needs a frame buffer larger than our FPGA; our
+streaming version needs one extra BRAM tile and gives the same thresholds on six test images.
+The RTL matches a Python golden model on 29.8 million pixels and is checked by 13 SVA assertions, 25 CTL properties in
+NuSMV and SymbiYosys k-induction. On a Zybo Z7-10 it meets timing at 25.18\,MHz, uses 3 BRAM tiles and no DSP in the core,
+runs live webcam video over HDMI, and is 437$\times$ faster than software on the RV32 core.
 \end{abstract}
 
 \tableofcontents
@@ -153,7 +149,7 @@ classified pixel leaves every clock, with a latency of only a few lines and no f
   \item Incorporate an adaptive-threshold technique from the literature and compare resources and quality.
   \item Demonstrate it live on the Zybo Z7-10: switch between original, smoothed and edge views; thresholds from switches.
 \end{enumerate}
-\textbf{Achieved.} All objectives were met on hardware, with two substitutions explained in Section~\ref{sec:discussion}: the
+\textbf{Achieved.} All objectives were met (the paper-based unit in simulation and synthesis only), with two substitutions explained in Section~\ref{sec:discussion}: the
 display is VGA-timed 640$\times$480 carried over HDMI/DVI (the Z7-10 has no VGA connector), and frames come from on-chip BRAM
 loaded over JTAG, or live from a laptop webcam over HDMI-in, instead of DDR/DMA and an OV7670 camera.
 Section~\ref{sec:related} reviews the background and the chosen paper; Sections~\ref{sec:spec}--\ref{sec:fpga} follow the design
@@ -174,9 +170,9 @@ sectors (0$^\circ$, 45$^\circ$, 90$^\circ$, 135$^\circ$) with comparisons of $|G
 block's gradient histogram, which needs block buffers. He and Yuan~\cite{he2008} pipeline Canny on an FPGA with a fixed
 threshold. Otsu's method~\cite{otsu} picks the threshold that maximises the between-class variance of a histogram and is
 the usual basis for adaptive Canny thresholds. Guo and Wu~\cite{guo2023} combine Canny with an Otsu threshold computed in
-a division-free, logarithm-domain unit on the FPGA; this is the paper we chose. It matches the project's research option
-``adaptive-threshold Canny on FPGA'' and asks for exactly the trade-off the course is about: a better quality measure at a
-hardware cost that has to be measured.
+a division-free, logarithm-domain unit on the FPGA; this is the paper we chose. It matches the research option
+``adaptive-threshold Canny on FPGA'' on our project card, and it lets us compare the gain in output quality with the extra
+hardware it needs.
 
 \subsection{Chosen Paper and Paper-to-RTL Plan}
 \begin{table}[H]\centering\footnotesize
@@ -250,7 +246,7 @@ Offset & Name & Acc. & Description\\
 \textbf{Golden model.} \texttt{model/golden.py} (NumPy) implements every stage with the exact integer arithmetic above and
 writes hex vectors of all intermediate stages (gray, smooth, magnitude, direction, NMS, class, histogram) for the
 testbenches. A second, independent implementation written by the second team member agrees on all 70 stage arrays of
-10 images, which guards against a shared misunderstanding. Figure~\ref{fig:stages} shows the stages on one image.
+10 images, so a misreading of the specification by one of us would have shown up as a disagreement. Figure~\ref{fig:stages} shows the stages on one image.
 \textbf{Y-chart.} The design was specified in the behavioural domain (algorithm, golden model), refined to the structural
 RTL domain (datapath + FSMs, hand HLS), and mapped to the physical domain by Vivado on the xc7z010.
 \figfile{stages.png}{0.78\linewidth}{Golden-model stages on the 640$\times$480 \emph{camera} image (the RTL output is identical bit for bit).}{fig:stages}
@@ -261,7 +257,7 @@ RTL domain (datapath + FSMs, hand HLS), and mapped to the physical domain by Viv
 \subsection{CDFG and Transformations}
 The kernel is the Sobel window operator: from the 3$\times$3 smoothed window $p_{rc}$ compute $G_x$, $G_y$, $|G_x|$,
 $|G_y|$, the magnitude and the two direction comparators. Starting from the textbook 3$\times$3 convolution (loop over
-nine taps per gradient) we applied four transformations (Table~\ref{tab:transform}); counts and critical paths are computed by
+nine taps per gradient) we applied four transformations~\cite{demicheli} (Table~\ref{tab:transform}); counts and critical paths are computed by
 \texttt{hls/sobel\_hls.py} from the DFG of each version (one control step per add/sub/compare/abs/multiply, shifts are wiring).
 \textbf{Constant folding / dead-code elimination} removes the six zero taps and the $\times(\pm1)$ products;
 \textbf{strength reduction} (hardware-library transformation) turns $\times2$, $\times32$ into wiring and $\times13$ into
@@ -317,7 +313,7 @@ List (2A+1B) & 1&1&3&3&2&2&4&4&5&6&9&6&7&7&8&8&9\\
 \end{table}
 
 \subsection{Allocation and Binding}
-\textbf{Register binding (left-edge).} Lifetimes of the 15 values of the 9-step schedule, sorted by birth step, pack into
+\textbf{Register binding (left-edge~\cite{demicheli}).} Lifetimes of the 15 values of the 9-step schedule, sorted by birth step, pack into
 4 registers: R0=$\{E_1,P,G_x,|G_x|,\text{mag}\}$, R1=$\{E_2,Q,G_y,8a{+}4a,13|G_x|,13|G_y|\}$, R2=$\{F,|G_y|\}$, R3=$\{G,8b{+}4b\}$
 (the 1-bit comparator results and signs go to flag flip-flops). This equals the maximum number of simultaneously live
 values, so left-edge is optimal here (the lifetimes form an interval graph).
@@ -349,7 +345,7 @@ The design point with the fewest operators is \emph{not} the smallest on the FPG
 operation (16 bits for the comparators, against 9--11 bits for most operations in the pipeline), and every shared input
 needs a multiplexer that costs as much as the 2-LUT-per-bit adder it saves. Resource sharing pays only when the shared
 operator is expensive (multipliers, DSPs). Because the video needs one window per clock, only the pipelined point meets
-the specification; it is the one in the product.
+the specification, and it is the one we used.
 
 %% =====================================================================
 \section{Logic and FSM Optimisation}
@@ -407,7 +403,7 @@ flip-flops; the heuristic code beats plain binary by one LUT. For a controller t
 requirement, so the choice is not critical.
 
 \subsection{Two-Level Minimisation}
-The ESPRESSO/BDD block is the direction quantiser + NMS select. Its inputs are the two comparator bits $c_0$
+The ESPRESSO~\cite{espresso}/BDD block is the direction quantiser + NMS select. Its inputs are the two comparator bits $c_0$
 ($32|G_y|\le13|G_x|$), $c_2$, the gradient signs $s_x,s_y$ and the eight neighbour comparisons ($m\ge$ earlier, $m>$ later
 for each sector); $c_0c_2(s_x+s_y)$ cannot occur and is a don't-care. Results (Table~\ref{tab:twolevel}):
 \begin{table}[H]\centering\footnotesize
@@ -460,7 +456,7 @@ presets (SW3:2), Digilent \texttt{rgb2dvi}. In the \emph{live} build an HDMI rec
 into the same frame store, which is read on the 25.18\,MHz output clock.
 
 \subsection{Bus Integration, Interrupt and DMA}
-The PicoRV32 subsystem (\texttt{rtl/soc}) has 8\,KB RAM, a mailbox shared with the laptop, a GPIO word and an APB3 master (SETUP
+The PicoRV32~\cite{picorv32} subsystem (\texttt{rtl/soc}) has 8\,KB RAM, a mailbox shared with the laptop, a GPIO word and an APB3 master (SETUP
 $\rightarrow$ ACCESS) to \texttt{apb\_regs}. The laptop loads firmware and photos through JTAG-to-AXI. Once per frame the firmware
 reads EDGE\_CNT and all 64 bins and writes the next thresholds (Listing~\ref{lst:driver}). There is \textbf{no interrupt}: the
 firmware polls FRAME\_CNT, which is enough at 60 frames/s. There is \textbf{no DMA}: a DDR frame buffer would need the Zynq PS and an
@@ -492,10 +488,10 @@ missing, duplicated or shifted pixel is detected, not only a wrong value. Three 
 VESA blanking. Directed tests: black/white frames, checkerboard, ramps, steps, diagonals, threshold corner cases (0/0, 1/1,
 equal, 2047); random: 25 random frames per small size; natural: 10 corpus images and a photo at 640$\times$480.
 Unit/stress benches: Sobel extrema and 100{,}000 random windows, an \textbf{exhaustive 4{,}169{,}764-case} direction test, NMS ties,
-histogram saturation, line-buffer restart, APB, CRC. System benches: the full video path (4 views $\times$ 4 presets, 28 runs), the
+histogram saturation, line-buffer restart, APB, CRC. System benches: the full video path (28 runs over the 4 views and 4 presets), the
 RV32 SoC with real firmware (6 scenarios) and the live HDMI-in path (all 76{,}800 frame-store bytes).
 
-\textbf{Assertions.} 13 concurrent SVA assertions are attached with \texttt{bind} (\texttt{tb/sva/core\_sva.sv}, the RTL is
+\textbf{Assertions.} Following the assertion-based style of~\cite{bening}, 13 concurrent SVA assertions are attached with \texttt{bind} (\texttt{tb/sva/core\_sva.sv}, the RTL is
 unchanged) and run in Verilator with \texttt{--assert} during the regression: windows centred inside the image (A1), line pointers
 in range (A2), EOL wraps the column (A3), $|G_x|+|G_y|\le2040$ (A4), Sobel latency exactly 4 with II$=$1 (A5,
 Listing~\ref{lst:sva}), class never 2'b11 (A6), one class per NMS pixel one clock later (A7), strong implies $m\ge T_\text{hi}$
@@ -588,7 +584,7 @@ that loops in CLEAR; replayed with blanking, the adaptive threshold is never app
 engine's (``CLASS MISMATCH (24,4)'').
 
 \subsection{BDD Analysis}
-With the \texttt{dd} ROBDD package (\texttt{formal/bdd\_study.py}) we built the direction comparator $c_0=(32|G_y|\le13|G_x|)$
+With the \texttt{dd} ROBDD~\cite{bryant} package (\texttt{formal/bdd\_study.py}) we built the direction comparator $c_0=(32|G_y|\le13|G_x|)$
 bit by bit on the real 11-bit operands (22 variables, ripple-carry adders and a comparator).
 \begin{table}[H]\centering\footnotesize
 \caption{ROBDD node counts for the comparator $c_0$ (22 variables).}\label{tab:bdd}
@@ -599,7 +595,7 @@ Variable ordering & Nodes\\
 Interleaved, MSB first ($a_{10},b_{10},a_9,b_9,\ldots$) & 554\\
 Interleaved, LSB first & 403\\
 Blocked (all $|G_x|$ bits, then all $|G_y|$ bits) & 4{,}085\\
-Blocked, after Rudell sifting (fixed seed; 228--405 over six seeds) & \textbf{283}\\
+Blocked, after Rudell sifting~\cite{rudell} (fixed seed; 228--405 over six seeds) & \textbf{283}\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -613,7 +609,7 @@ RTL (next-state functions from Yosys, image computation by existential quantific
 \subsection{Formal Verification of the RTL (SymbiYosys)}
 SymbiYosys (smtbmc, z3) proved three harnesses (\texttt{formal/sby}) both by BMC to depth 30 and \textbf{unboundedly by k-induction}
 (depth 20): \texttt{vga\_timing} at the \emph{real} 800$\times$525 parameters (8 assertions: counter bounds, SOF/EOL/EOF/DE
-placement, HSYNC position, line wrap), removing the reduced-size limit of the NuSMV model; \texttt{otsu\_ctrl} (7 assertions, incl.
+placement, HSYNC position, line wrap), so the real size is covered and not only the reduced NuSMV model; \texttt{otsu\_ctrl} (7 assertions, incl.
 frame-aligned update and ``CLEAR holds until the pass ends''); \texttt{apb\_regs} (6 assertions: PREADY, PSLVERR only in ACCESS,
 read-only registers reject writes, no spurious writes, a status event is never lost, a write lands).
 
@@ -688,7 +684,7 @@ FIFO and is declared with \texttt{set\_clock\_groups}. \textbf{Hardware evidence
 samples) on the core input, the Sobel stage, the classified output, the thresholds and the edge counter (Fig.~\ref{fig:ila}).
 Triggered on output row 240 of an uploaded photo, \emph{all 3{,}260 classified pixels in the capture equal the golden model's
 classes} (0 mismatches). The registers agree as well: the 76{,}800-byte frame store reads back identical, and the CPU-read edge count
-and all 64 histogram bins equal the model (Z7-10: 4{,}991 and 2{,}275 strong edges for two photos; original Zybo: also a laptop-written threshold override).
+and all 64 histogram bins equal the model (two photos on the Z7-10).
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth]{ila_fig.png}
 \caption{ILA capture on the Zybo Z7-10 (Vivado hardware manager; stored photo, thresholds 80/200). The cursor (sample 704) is
@@ -701,10 +697,10 @@ select four threshold presets; BTN2 toggles live webcam mode, in which the lapto
 %% =====================================================================
 \section{Discussion and Limitations}
 \label{sec:discussion}
-\textbf{What worked.} Writing the golden model first and comparing every stage at its raster position found every bug before
-hardware; the line buffer carries coordinates with the data, so gaps and blanking never break alignment. Formal methods added real
-value on the controller: the hand labelling and NuSMV exposed the missing fairness assumption, and a property that was wrong
-(not the RTL). \textbf{What did not, or differently from the card.} (1) The board has HDMI, not VGA; the output uses VGA (VESA DMT)
+\textbf{What worked.} Writing the golden model first and comparing every stage at its raster position found all RTL bugs before
+hardware (the one problem seen only on the board was in the firmware); the line buffer carries coordinates with the data, so gaps and blanking never break alignment. Formal checking was most useful on
+the controller: the hand labelling and NuSMV showed that a liveness property needs a fairness assumption, and one property
+turned out to be wrong in the specification, not in the RTL. \textbf{What did not, or differently from the card.} (1) The board has HDMI, not VGA; the output uses VGA (VESA DMT)
 timing over DVI. (2) No DDR/DMA and no OV7670: frames come from BRAM over JTAG or from the laptop webcam over HDMI-in at 320$\times$240
 (shown 2$\times$). (3) No interrupt; the firmware polls once per frame. (4) The paper-enhanced design is verified and synthesised but not
 yet in the bitstream. (5) Post-route SDF timing simulation of the HDMI transmitter was not completed (static timing passes). (6)
@@ -790,6 +786,7 @@ python formal/run_sby.py                       # SymbiYosys BMC + k-induction
 python scripts/otsu_stream_check.py            # streaming Otsu vs. the paper's engine (6 images, 640x480)
 make study                                     # paper / baseline quality and resource comparison
 P7_BOARD=zybo_z7 vivado -mode batch -source scripts/build_hdmi.tcl ; make live   # bitstreams
+make ila ; vivado -mode gui -source scripts/ila_capture.tcl -tclargs capture 240  # ILA build + capture (Fig. 6)
 \end{lstlisting}
 
 \section{Additional Material}
